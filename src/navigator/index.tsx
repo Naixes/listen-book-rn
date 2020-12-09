@@ -2,12 +2,17 @@ import { NavigationContainer } from '@react-navigation/native'
 import { CardStyleInterpolators, createStackNavigator, HeaderStyleInterpolators, StackNavigationProp } from '@react-navigation/stack'
 import React from 'react'
 
-import Home from '@/pages/Home'
+// Home为标签选择器
+import Home from '@/navigator/BottomTab'
 import Detail from '@/pages/Detail'
 import { Platform, StyleSheet } from 'react-native'
 
 // 不能使用interface，缺少索引签名
 export type RootStackParamList = {
+    BottomTab: {
+        // 跳转时指定某一tab
+        screen?: string;
+    };
     Home: undefined;
     Detail: {
         id: number
@@ -57,7 +62,8 @@ class Navigator extends React.Component {
                     }}
                 >
                     {/* options和screenOptions内容一样，options优先级更高 */}
-                    <Stack.Screen options={{headerTitle: "首页"}} name="Home" component={Home} />
+                    {/* 嵌套标签选择器，标题动态显示 */}
+                    <Stack.Screen name="Home" component={Home} />
                     <Stack.Screen options={{headerTitle: "详情"}} name="Detail" component={Detail} />
                 </Stack.Navigator>
             </NavigationContainer>
