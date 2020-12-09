@@ -174,7 +174,7 @@ import 'react-native-gesture-handler';
 
 `199.232.96.133 raw.githubusercontent.com`
 
-#### 报错
+##### 报错
 
 > error: ReferenceError: SHA-1 for file C:\Users\Frontend\AppData\Roaming\npm\node_modules\@react-native-community\cli\node_modules\metro\src\lib\polyfills\require.js (C:\Users\Frontend\AppData\Roaming\npm\node_modules\@react-native-community\cli\node_modules\metro\src\lib\polyfills\require.js) is not computed
 
@@ -183,5 +183,137 @@ import 'react-native-gesture-handler';
 解决：npm i -g react-native-cli --force
 
 > Error while updating property 'nativeBackgroundAndroid' of a view managed by: RCTView
->
-> Button组件会报错
+
+安卓4.x的版本Button组件会报错
+
+##### 使用
+
+```tsx
+// navigator/index.tsx
+import { NavigationContainer } from '@react-navigation/native'
+import { CardStyleInterpolators, createStackNavigator, HeaderStyleInterpolators, StackNavigationProp } from '@react-navigation/stack'
+import React from 'react'
+
+import Home from '@/pages/Home'
+import Detail from '@/pages/Detail'
+import { Platform, StyleSheet } from 'react-native'
+
+// 不能使用interface，缺少索引签名
+export type RootStackParamList = {
+    Home: undefined;
+    Detail: {
+        id: number
+    };
+}
+
+// 定义props类型
+export type RootStackProps = StackNavigationProp<RootStackParamList>
+
+// Record是一个很好用的工具类型。他会将一个类型的所有属性值都映射到另一个类型上并创造一个新的类型
+// 堆栈式导航器
+let Stack = createStackNavigator<RootStackParamList>()
+// {
+//     Navigator,
+//     Screen
+// }
+
+class Navigator extends React.Component {
+    render() {
+        return (
+            <NavigationContainer>
+                <Stack.Navigator
+                    // 标题模式
+                    // float(ios默认，共用一个标题栏)/screen(android默认)
+                    headerMode="screen"
+                    screenOptions={{
+                        headerTitleAlign: "center",
+                        // 标题动画
+                        headerStyleInterpolator: HeaderStyleInterpolators.forUIKit,
+                        // 内容动画
+                        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+                        // 打开手势系统，安卓默认关闭
+                        gestureEnabled: true,
+                        // 设置手势方向
+                        gestureDirection: "horizontal",
+                        // 统一标题样式
+                        headerStyle: {
+                            ...Platform.select({
+                                android: {
+                                    // 阴影
+                                    elevation: 0,
+                                    borderBottomWidth: StyleSheet.hairlineWidth,
+                                },
+                                ios: {}
+                            })
+                        }
+                    }}
+                >
+                    {/* options和screenOptions内容一样，options优先级更高 */}
+                    <Stack.Screen options={{headerTitle: "首页"}} name="Home" component={Home} />
+                    <Stack.Screen options={{headerTitle: "详情"}} name="Detail" component={Detail} />
+                </Stack.Navigator>
+            </NavigationContainer>
+        )
+    }
+}
+
+export default Navigator
+
+// Home.tsx
+import React from 'react'
+import { View, Text, TouchableOpacity, Button } from 'react-native'
+import { RootStackProps } from '../navigator'
+
+interface IProps {
+    // navigation传过来的参数，可进行路由跳转
+    navigation: RootStackProps
+}
+
+class Home extends React.Component<IProps> {
+    pressHandler = () => {
+        const {navigation} = this.props
+        navigation.navigate("Detail", {id: 1})
+    }
+    render() {
+        return (
+            <View>
+                <Text>Home</Text>
+                <TouchableOpacity onPress={this.pressHandler}>
+                    <Text>点击跳转到详情</Text>
+                </TouchableOpacity>
+                {/* 安卓4.x的版本Button可能会报错 */}
+                {/* <Button title="点击跳转到详情" onPress={this.pressHandler}></Button> */}
+            </View>
+        )
+    }
+}
+
+export default Home
+
+// Detail.tsx
+import { RouteProp } from '@react-navigation/native'
+import React from 'react'
+import { View, Text } from 'react-native'
+import { RootStackParamList } from '../navigator'
+
+interface IProps {
+    // navigation传过来的参数，可获取路由信息
+    route: RouteProp<RootStackParamList, 'Detail'>
+}
+
+class Detail extends React.Component<IProps> {
+    render() {
+        const {route} = this.props
+
+        return (
+            <View>
+                <Text>Detail</Text>
+                <Text>{route.params.id}</Text>
+            </View>
+        )
+    }
+}
+
+export default Detail
+```
+

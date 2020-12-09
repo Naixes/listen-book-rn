@@ -7,9 +7,11 @@ import Detail from '@/pages/Detail'
 import { Platform, StyleSheet } from 'react-native'
 
 // 不能使用interface，缺少索引签名
-type RootStackParamList = {
+export type RootStackParamList = {
     Home: undefined;
-    Detail: undefined;
+    Detail: {
+        id: number
+    };
 }
 
 // 定义props类型
@@ -45,6 +47,7 @@ class Navigator extends React.Component {
                         headerStyle: {
                             ...Platform.select({
                                 android: {
+                                    // 阴影
                                     elevation: 0,
                                     borderBottomWidth: StyleSheet.hairlineWidth,
                                 },
