@@ -416,3 +416,243 @@ class BottomTabs extends React.Component<IProps> {
 export default BottomTabs
 ```
 
+### 状态管理
+
+redux：只提供一个仓库，并且不能直接操作，rematch和dva是对redux的封装，redux-saga是redux的中间件，一种异步解决方案，类似的还有redux-thunk，redux-promise
+
+mobx：多个仓库，监听这些仓库的数据，可以对数据进行操作
+
+#### DVA
+
+dva 首先是一个基于 [redux](https://github.com/reduxjs/redux) 和 [redux-saga](https://github.com/redux-saga/redux-saga) 的数据流方案，然后为了简化开发体验，dva 还额外内置了 [react-router](https://github.com/ReactTraining/react-router) 和 [fetch](https://github.com/github/fetch)，所以也可以理解为一个轻量级的应用框架。
+
+##### 集成DVA
+
+安装dva-core-ts，react-redux
+
+`yarn add dva-core-ts react-redux @types/react-redux`
+
+```ts
+// dva.ts
+import { create } from "dva-core-ts";
+
+import models from '@/models/index'
+
+// 创建实例
+const app = create()
+// 加载model对象
+models.forEach(model => {
+    app.model(model)
+})
+// 启动dva
+app.start()
+// 导出dva数据
+export default app._store
+
+// models/home.ts
+import { Effect, Model } from "dva-core-ts"
+import { Reducer } from "redux"
+
+interface HomeState {
+    num: number
+}
+
+interface HomeModel extends Model {
+    namespace: 'home';
+    state: HomeState;
+    reducers: {
+        add: Reducer<HomeState>
+    };
+    // 异步
+    // 所有的函数都是生成器函数
+    effects: {
+        asyncAdd: Effect
+    };
+}
+
+const initialState = {
+    num: 0
+}
+
+const delay = (timeout: number) => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve()
+        }, timeout)
+    })
+}
+
+const homeModel: HomeModel = {
+    namespace: 'home',
+    state: {
+        num: 0
+    },
+    reducers: {
+        add(state = initialState, {payload}) {
+            return {
+                ...state,
+                num: state.num + payload.num
+            }
+        }
+    },
+    effects: {
+        *asyncAdd({payload}, {call, put}) {
+            yield call(delay, 1000)
+            // 和dispatch作用一样
+            yield put({
+                type: 'add',
+                payload
+            })
+        }
+    }
+}
+
+export default homeModel
+
+// models/index.ts
+import home from './home'
+
+const models = [home]
+// 导出State类型
+export type RootState = {
+    home: typeof home.state
+}
+
+export default models
+
+// index.tsx
+import React from 'react'
+import { Provider } from 'react-redux'
+
+import Navigator from '@/navigator/index'
+import store from '@/config/dva'
+
+export default class extends React.Component {
+    render() {
+        return (
+            <Provider store={store}>
+                <Navigator></Navigator>
+            </Provider>
+        )
+    }
+}
+```
+
+##### 使用dva
+
+状态映射
+
+异步操作
+
+```tsx
+import React from 'react'
+import { View, Text, TouchableOpacity, Button } from 'react-native'
+import { connect, ConnectedProps } from 'react-redux'
+import { RootState } from '@/models/index'
+import { RootStackProps } from '@/navigator/index'
+
+const mapStateToProps = ({home}: RootState) => ({
+    num: home.num
+})
+
+// 状态映射
+const connector = connect(mapStateToProps)
+
+type ModelState = ConnectedProps<typeof connector>
+
+// 继承 model state
+interface IProps extends ModelState {
+    // navigation传过来的参数，可进行路由跳转
+    navigation: RootStackProps
+}
+
+class Home extends React.Component<IProps> {
+    pressAddHandler = () => {
+        const {dispatch} = this.props
+        dispatch({
+            type: 'home/add',
+            payload: {
+                num: 3
+            }
+        })
+    }
+    // 异步操作
+    pressAsyncAddHandler = () => {
+        const {dispatch} = this.props
+        dispatch({
+            type: 'home/asyncAdd',
+            payload: {
+                num: 3
+            }
+        })
+    }
+    render() {
+        const num = this.props.num
+        return (
+            <View>
+                <Text>Home{num}</Text>
+                <TouchableOpacity onPress={this.pressAddHandler}>
+                    <Text>点击+3</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={this.pressAsyncAddHandler}>
+                    <Text>点击async+3</Text>
+                </TouchableOpacity>
+            </View>
+        )
+    }
+}
+
+export default connector(Home)
+```
+
+##### 插件-dva-loading
+
+`yarn add dva-loading-ts`
+
+使用
+
+```tsx
+// dva.ts
+// start前执行
+app.use(createLoading())
+
+// index.ts
+...
+// 导出State类型
+export type RootState = {
+    home: typeof home.state,
+    loading: DvaLoadingState
+}
+
+// pages/Home.tsx
+import React from 'react'
+import { View, Text, TouchableOpacity, Button } from 'react-native'
+import { connect, ConnectedProps } from 'react-redux'
+import { RootState } from '@/models/index'
+import { RootStackProps } from '@/navigator/index'
+
+const mapStateToProps = ({home, loading}: RootState) => ({
+    num: home.num,
+    loading: loading.effects['home/asyncAdd']
+})
+...
+
+class Home extends React.Component<IProps> {
+    ...
+    render() {
+        const {num, loading} = this.props
+        return (
+            <View>
+                <Text>Home{num}</Text>
+                <Text>{loading? '正在努力计算中' : ''}</Text>
+                <TouchableOpacity onPress={this.pressAsyncAddHandler}>
+                    <Text>点击async+3</Text>
+                </TouchableOpacity>
+            </View>
+        )
+    }
+}
+
+export default connector(Home)
+```
+
