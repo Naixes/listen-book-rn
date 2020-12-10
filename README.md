@@ -656,3 +656,88 @@ class Home extends React.Component<IProps> {
 export default connector(Home)
 ```
 
+### 首页
+
+底部导航栏图标
+
+头部标签，包含手势功能
+
+头部导航栏背景动态渐变
+
+获取数据显示轮播图
+
+猜你喜欢组件
+
+列表显示
+
+下拉时头部颜色变化
+
+#### 导航栏图标
+
+`react-native-vector-icons`库，字体图标，缺点：会完整打包
+
+`react-native-iconfont-cli`库，命令行工具，把iconfont.cn图标转换为RN组件，不依赖字体，多色彩，热更新（可自定义使用图标比较灵活，本项目使用）
+
+##### 使用
+
+安装依赖：
+
+`yarn add react-native-svg`（ios需要连接）
+
+`yarn add react-native-iconfont-cli -D`
+
+配置：
+
+`npx iconfont-init`：创建iconfont.json文件
+
+修改配置文件链接和其他配置
+
+```json
+{
+    "symbol_url": "http://at.alicdn.com/t/font_1669816_zcvnh1deqnm.js",
+    "use_typescript": true,
+    "save_dir": "./src/assets/iconfont",
+    // 通用的前缀
+    "trim_icon_prefix": "",
+    "default_icon_size": 18,
+    // 本地 svg 的路径, 配置此项后在路径中添加 svg 文件即可。支持渐变图标
+    "local_svgs": "./localSvgs"
+}
+
+```
+
+生成组件：
+
+`npx iconfont-rn`
+
+使用组件：
+
+```tsx
+import Icon from '@/assets/iconfont/index'
+...
+class BottomTabs extends React.Component<IProps> {
+	...
+    render()  {
+        return (
+            <Tab.Navigator tabBarOptions={{
+                activeTintColor: "#f86442"
+            }}>
+                <Tab.Screen
+                    name="Home"
+                    component={Home}
+                    options={{
+                        tabBarLabel: "首页",
+                        tabBarIcon: ({color, size}) => (
+                            <Icon name="icon-shouye" color={color} size={size} />
+                        )
+                    }}
+                ></Tab.Screen>
+                ...
+            </Tab.Navigator>
+        )
+    }
+}
+
+export default BottomTabs
+```
+

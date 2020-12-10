@@ -25,6 +25,7 @@
     "react-native-reanimated": "^1.13.2",
     "react-native-safe-area-context": "^3.1.9",
     "react-native-screens": "^2.15.0",
+    "react-native-svg": "^12.1.0",
     "react-redux": "^7.2.2"
   },
   "devDependencies": {
@@ -40,6 +41,7 @@
     "eslint": "^6.5.1",
     "jest": "^25.1.0",
     "metro-react-native-babel-preset": "^0.59.0",
+    "react-native-iconfont-cli": "^2.2.1",
     "react-test-renderer": "16.13.1",
     "typescript": "^3.8.3"
   },

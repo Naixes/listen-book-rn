@@ -8,6 +8,8 @@ import Account from '@/pages/Account'
 import { RootStackParamList, RootStackProps } from '.'
 import { getFocusedRouteNameFromRoute, RouteProp } from '@react-navigation/native'
 
+import Icon from '@/assets/iconfont/index'
+
 type Route = RouteProp<RootStackParamList, 'BottomTab'>;
 
 export interface IProps {
@@ -54,28 +56,40 @@ class BottomTabs extends React.Component<IProps> {
                     name="Home"
                     component={Home}
                     options={{
-                        tabBarLabel: "首页"
+                        tabBarLabel: "首页",
+                        tabBarIcon: ({color, size}) => (
+                            <Icon name="icon-shouye" color={color} size={size} />
+                        )
                     }}
                 ></Tab.Screen>
                 <Tab.Screen
                     name="Listen"
                     component={Listen}
                     options={{
-                        tabBarLabel: "我听"
+                        tabBarLabel: "我听",
+                        tabBarIcon: ({color, size}) => (
+                            <Icon name="icon-shoucang" color={color} size={size} />
+                        )
                     }}
                 ></Tab.Screen>
                 <Tab.Screen
                     name="Found"
                     component={Found}
                     options={{
-                        tabBarLabel: "发现"
+                        tabBarLabel: "发现",
+                        tabBarIcon: ({color, size}) => (
+                            <Icon name="icon-faxian" color={color} size={size} />
+                        )
                     }}
                 ></Tab.Screen>
                 <Tab.Screen
                     name="Account"
                     component={Account}
                     options={{
-                        tabBarLabel: "我的"
+                        tabBarLabel: "我的",
+                        tabBarIcon: ({color, size}) => (
+                            <Icon name="icon-user" color={color} size={size} />
+                        )
                     }}
                 ></Tab.Screen>
             </Tab.Navigator>
