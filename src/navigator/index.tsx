@@ -3,9 +3,9 @@ import { CardStyleInterpolators, createStackNavigator, HeaderStyleInterpolators,
 import React from 'react'
 
 // Home为标签选择器
-import Home from '@/navigator/BottomTab'
+import Home from '@/navigator/BottomTabs'
 import Detail from '@/pages/Detail'
-import { Platform, StyleSheet } from 'react-native'
+import { Platform, StatusBar, StyleSheet } from 'react-native'
 
 // 不能使用interface，缺少索引签名
 export type RootStackParamList = {
@@ -48,6 +48,8 @@ class Navigator extends React.Component {
                         gestureEnabled: true,
                         // 设置手势方向
                         gestureDirection: "horizontal",
+                        // 设置状态栏高度，防止渲染时有抖动
+                        // headerStatusBarHeight: StatusBar.currentHeight,
                         // 统一标题样式
                         headerStyle: {
                             ...Platform.select({
@@ -63,7 +65,7 @@ class Navigator extends React.Component {
                 >
                     {/* options和screenOptions内容一样，options优先级更高 */}
                     {/* 嵌套标签选择器，标题动态显示 */}
-                    <Stack.Screen name="Home" component={Home} />
+                    <Stack.Screen options={{headerTitle: "首页"}} name="Home" component={Home} />
                     <Stack.Screen options={{headerTitle: "详情"}} name="Detail" component={Detail} />
                 </Stack.Navigator>
             </NavigationContainer>
