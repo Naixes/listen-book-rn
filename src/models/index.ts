@@ -1,6 +1,6 @@
 import {DvaLoadingState} from 'dva-loading-ts'
 
-import home from './home'
+import home from '@/models/home'
 
 const models = [home]
 

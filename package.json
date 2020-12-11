@@ -16,6 +16,7 @@
     "@react-navigation/native": "^5.8.10",
     "@react-navigation/stack": "^5.12.8",
     "@types/react-redux": "^7.1.11",
+    "axios": "^0.21.0",
     "babel-plugin-module-resolver": "^4.0.0",
     "dva-core-ts": "^2.0.7",
     "dva-loading-ts": "^3.0.23",
@@ -26,6 +27,7 @@
     "react-native-reanimated": "^1.13.2",
     "react-native-safe-area-context": "^3.1.9",
     "react-native-screens": "^2.15.0",
+    "react-native-snap-carousel": "^3.9.1",
     "react-native-svg": "^12.1.0",
     "react-native-tab-view": "^2.15.2",
     "react-redux": "^7.2.2"
@@ -36,6 +38,7 @@
     "@react-native-community/eslint-config": "^1.1.0",
     "@types/jest": "^25.2.3",
     "@types/react-native": "^0.63.2",
+    "@types/react-native-snap-carousel": "^3.8.2",
     "@types/react-test-renderer": "^16.9.2",
     "@typescript-eslint/eslint-plugin": "^2.27.0",
     "@typescript-eslint/parser": "^2.27.0",

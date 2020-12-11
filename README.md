@@ -851,3 +851,246 @@ class BottomTabs extends React.Component<IProps> {
 export default BottomTabs
 ```
 
+#### 轮播图
+
+安装依赖
+
+`yarn add react-native-snap-carousel @types/react-native-snap-carousel`
+
+` yarn add -D @types/react-native-snap-carousel`
+
+获取接口数据：使用axios`yarn add axios`
+
+```tsx
+// pages/Home/Carousel.tsx
+import React from 'react'
+import SnapCarousel, { ParallaxImage, AdditionalParallaxProps, Pagination } from 'react-native-snap-carousel'
+import {StyleSheet, View } from 'react-native'
+
+import {viewportWidth, widFromPer, heiFromPer} from '@/utils/index'
+import {ICarousel} from '@/models/home'
+
+interface IProps {
+    data: ICarousel[]
+}
+
+const itemWidth = widFromPer(90) + widFromPer(3) * 2
+const itemHeight = heiFromPer(26)
+
+class Carousel extends React.Component<IProps> {
+    state = {
+        activeIndex: 0
+    }
+
+    snapHandler = (index: number) => {
+        this.setState({
+            activeIndex: index
+        })
+    }
+
+    // get表示是一个属性
+    get pagination() {
+        const {activeIndex} = this.state
+        const {data} = this.props
+        return (
+            <View style={styles.paginationWrapper}>
+                <Pagination
+                    containerStyle={styles.paginationContainer}
+                    dotContainerStyle={styles.dotContainer}
+                    dotStyle={styles.dotStyle}
+                    dotsLength={data.length}
+                    activeDotIndex={activeIndex}
+                    inactiveDotScale={0.7}
+                    inactiveDotOpacity={0.6}
+                ></Pagination>
+            </View>
+        )
+    }
+
+    // item为data中的每一项
+    // parallexProps：视差配置
+    renderItem = ({item}: {item: ICarousel}, parallaxProps?: AdditionalParallaxProps) => {
+        return (
+            <ParallaxImage
+                source={{uri: item.image}}
+                containerStyle={styles.imageContainer}
+                style={styles.image}
+                // 视差速度默认0.3
+                parallaxFactor={0.8}
+                {...parallaxProps}
+                // 显示加载动画
+                showSpinner
+                spinnerColor="rgba(0,0,0,0.25)"
+            />
+        )
+    }
+
+    render() {
+        const {data} = this.props
+        return (
+            <View>
+                <SnapCarousel
+                    data={data}
+                    renderItem={this.renderItem}
+                    sliderWidth={viewportWidth}
+                    itemWidth={itemWidth}
+                    onSnapToItem={this.snapHandler}
+                    hasParallaxImages
+                    loop
+                    autoplay
+                ></SnapCarousel>
+                {this.pagination}
+            </View>
+        )
+    }
+}
+
+const styles = StyleSheet.create({
+    imageContainer: {
+        width: itemWidth,
+        height: itemHeight,
+        borderRadius: 8,
+    },
+    image: {
+        ...StyleSheet.absoluteFillObject,
+        resizeMode: 'cover',
+    },
+    paginationWrapper: {
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    paginationContainer: {
+        position: "absolute",
+        top: -18,
+        // backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    dotContainer: {
+        marginHorizontal: 4,
+    },
+    dotStyle: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: 'rgb(255, 255, 255)',
+    }
+})
+
+export default Carousel
+
+// models/home.ts
+import { Effect, Model } from "dva-core-ts"
+import { Reducer } from "redux"
+import axios from 'axios'
+
+const CAROUSEL_URL = '/mock/11/carousel'
+
+export interface ICarousel {
+    id: string;
+    image: string;
+    corlor: [string, string]
+}
+
+interface HomeState {
+    carousels: ICarousel[]
+}
+
+interface HomeModel extends Model {
+    namespace: 'home';
+    state: HomeState;
+    reducers: {
+        setState: Reducer<HomeState>
+    };
+    // 所有的函数都是生成器函数
+    effects: {
+        fetchCarousels: Effect
+    };
+}
+
+const initialState: HomeState = {
+    carousels: []
+}
+
+const homeModel: HomeModel = {
+    namespace: 'home',
+    state: {
+        carousels: []
+    },
+    reducers: {
+        setState(state = initialState, {payload}) {
+            return {
+                ...state,
+                ...payload
+            }
+        }
+    },
+    effects: {
+        *fetchCarousels({payload}, {call, put}) {
+            // 解构出data
+            const {data} = yield call(axios.get, CAROUSEL_URL)
+            console.log('data', data);
+            
+            // 和dispatch作用一样
+            yield put({
+                type: 'setState',
+                payload: {
+                    carousels: data
+                }
+            })
+        }
+    }
+}
+
+export default homeModel
+
+// pages/Home/index
+import React from 'react'
+import { View, Text, TouchableOpacity, Button } from 'react-native'
+import { connect, ConnectedProps } from 'react-redux'
+import { RootState } from '@/models/index'
+import { RootStackProps } from '@/navigator/index'
+import Carousel from '@/pages/Home/Carousel'
+
+const mapStateToProps = ({home, loading}: RootState) => ({
+    carousels: home.carousels,
+    loading: loading.effects['home/fetchCarousels']
+})
+
+// 状态映射
+const connector = connect(mapStateToProps)
+
+type ModelState = ConnectedProps<typeof connector>
+
+// 继承 model state
+interface IProps extends ModelState {
+    // navigation传过来的参数，可进行路由跳转
+    navigation: RootStackProps
+}
+
+class Home extends React.Component<IProps> {
+    componentDidMount() {
+        const {dispatch} = this.props
+        dispatch({
+            type: 'home/fetchCarousels'
+        })
+    }
+    render() {
+        const {carousels} = this.props
+        console.log(carousels);
+        
+        return (
+            <View>
+                <Carousel data={carousels}/>
+            </View>
+        )
+    }
+}
+
+export default connector(Home)
+```
+
+> 报错uncaught at _callee3 at _callee3
+
+原因：yapi服务无法访问导致，修改为本地ip即可
