@@ -1,5 +1,5 @@
 import React from 'react'
-import { FlatList, ListRenderItemInfo, ScrollView, View } from 'react-native'
+import { FlatList, ListRenderItemInfo, StyleSheet, Text, View } from 'react-native'
 import { connect, ConnectedProps } from 'react-redux'
 
 import { RootState } from '@/models/index'
@@ -12,7 +12,8 @@ import { IChannel } from '@/models/home'
 const mapStateToProps = ({home, loading}: RootState) => ({
     carousels: home.carousels,
     channels: home.channels,
-    loading: loading.effects['home/fetchCarousels']
+    hasMore: home.pagination.hasMore,
+    loading: loading.effects['home/fetchChannel']
 })
 
 // 状态映射
@@ -26,7 +27,14 @@ interface IProps extends ModelState {
     navigation: RootStackProps
 }
 
-class Home extends React.Component<IProps> {
+interface IState {
+    refreshing: boolean
+}
+
+class Home extends React.Component<IProps, IState> {
+    state = {
+        refreshing: false
+    }
     componentDidMount() {
         const {dispatch} = this.props
         dispatch({
@@ -44,6 +52,7 @@ class Home extends React.Component<IProps> {
             <ChannelItem onPress={this.onPress} item={item}></ChannelItem>
         )
     }
+    // 轮播图和猜你喜欢模块
     get header() {
         const {carousels} = this.props
         return (
@@ -53,22 +62,96 @@ class Home extends React.Component<IProps> {
             </View>
         )
     }
+    // 加载提示
+    get footer() {
+        const {loading, hasMore, channels} = this.props
+        if(!hasMore) {
+            return (
+                <View style={styles.container}>
+                    <Text style={styles.text}>---我是有底线的---</Text>
+                </View>
+            )
+        }
+        if(loading && hasMore && channels.length > 0) {
+            return (
+                <View style={styles.container}>
+                    <Text style={styles.text}>正在加载中...</Text>
+                </View>
+            )
+        }
+    }
+    // 暂无数据
+    get empty() {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.text}>暂无数据</Text>
+            </View>
+        )
+    }
     keyExtractor = (item: IChannel) => {
         return item.id
     }
+    // 加载更多
+    onEndReached = () => {
+        // 正在加载以及无更多数据时中断
+        const {loading, hasMore} = this.props
+        if(loading || !hasMore) return
+
+        const {dispatch} = this.props
+        dispatch({
+            type: 'home/fetchChannel',
+            payload: {
+                loadMore: true
+            }
+        })
+    }
+    // 下拉刷新
+    onRefresh = () => {
+        this.setState({
+            refreshing: true
+        })
+        const {dispatch} = this.props
+        dispatch({
+            type: 'home/fetchChannel',
+            callback: () => {
+                this.setState({
+                    refreshing: false
+                })
+            }
+        })
+    }
     render() {
         const {channels} = this.props
+        const {refreshing} = this.state
         return (
             // ScrollView 的子组件不能有 FlatList，使用ListHeaderComponent 属性即可
             <FlatList
                 ListHeaderComponent={this.header}
+                ListFooterComponent={this.footer}
+                ListEmptyComponent={this.empty}
                 data={channels}
                 renderItem={this.renderItem}
                 // keyExtractor生成不重复的key，减少重新渲染，不指定时默认使用data的key或下标
                 keyExtractor={this.keyExtractor}
+                // 下拉
+                onRefresh={this.onRefresh}
+                refreshing={refreshing}
+                // 上拉
+                onEndReached={this.onEndReached}
+                onEndReachedThreshold={0.2}
             />
         )
     }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    margin: 10,
+    alignItems: 'center',
+  },
+  text: {
+    color: '#333',
+  },
+});
 
 export default connector(Home)

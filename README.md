@@ -607,6 +607,8 @@ export default connector(Home)
 
 ##### 插件-dva-loading
 
+
+
 `yarn add dva-loading-ts`
 
 使用
@@ -1199,5 +1201,223 @@ class Home extends React.Component<IProps> {
 }
 
 export default connector(Home)
+```
+
+##### 上拉下拉
+
+```tsx
+...
+const mapStateToProps = ({home, loading}: RootState) => ({
+    carousels: home.carousels,
+    channels: home.channels,
+    hasMore: home.pagination.hasMore,
+    loading: loading.effects['home/fetchChannel']
+})
+...
+class Home extends React.Component<IProps, IState> {
+    state = {
+        refreshing: false
+    }
+    componentDidMount() {
+        const {dispatch} = this.props
+        dispatch({
+            type: 'home/fetchCarousels'
+        })
+        dispatch({
+            type: 'home/fetchChannel'
+        })
+    }
+    renderItem = ({item}: ListRenderItemInfo<IChannel>) => {
+        return (
+            <ChannelItem onPress={this.onPress} item={item}></ChannelItem>
+        )
+    }
+    ...
+    // 加载提示
+    get footer() {
+        const {loading, hasMore, channels} = this.props
+        if(!hasMore) {
+            return (
+                <View style={styles.container}>
+                    <Text style={styles.text}>---我是有底线的---</Text>
+                </View>
+            )
+        }
+        if(loading && hasMore && channels.length > 0) {
+            return (
+                <View style={styles.container}>
+                    <Text style={styles.text}>正在加载中...</Text>
+                </View>
+            )
+        }
+    }
+    // 暂无数据
+    get empty() {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.text}>暂无数据</Text>
+            </View>
+        )
+    }
+    keyExtractor = (item: IChannel) => {
+        return item.id
+    }
+    // 加载更多
+    onEndReached = () => {
+        // 正在加载以及无更多数据时中断
+        const {loading, hasMore} = this.props
+        if(loading || !hasMore) return
+
+        const {dispatch} = this.props
+        dispatch({
+            type: 'home/fetchChannel',
+            payload: {
+                loadMore: true
+            }
+        })
+    }
+    // 下拉刷新
+    onRefresh = () => {
+        this.setState({
+            refreshing: true
+        })
+        const {dispatch} = this.props
+        dispatch({
+            type: 'home/fetchChannel',
+            callback: () => {
+                this.setState({
+                    refreshing: false
+                })
+            }
+        })
+    }
+    render() {
+        const {channels} = this.props
+        const {refreshing} = this.state
+        return (
+            // ScrollView 的子组件不能有 FlatList，使用ListHeaderComponent 属性即可
+            <FlatList
+                ListHeaderComponent={this.header}
+                ListFooterComponent={this.footer}
+                ListEmptyComponent={this.empty}
+                data={channels}
+                renderItem={this.renderItem}
+                // keyExtractor生成不重复的key，减少重新渲染，不指定时默认使用data的key或下标
+                keyExtractor={this.keyExtractor}
+                // 下拉
+                onRefresh={this.onRefresh}
+                refreshing={refreshing}
+                // 上拉
+                onEndReached={this.onEndReached}
+                onEndReachedThreshold={0.2}
+            />
+        )
+    }
+}
+
+export default connector(Home)
+```
+
+model
+
+```tsx
+...
+// 首页列表
+const CHANNEL_URL = '/mock/11/channel'
+
+...
+export interface IChannel {
+    id: string;
+    title: string;
+    image: string;
+    remark: string;
+    played: number;
+    playing: number;
+}
+
+export interface IPagination {
+    current: number;
+    total: number;
+    hasMore: boolean;
+}
+
+interface HomeState {
+    carousels: ICarousel[],
+    guess: IGuess[],
+    channels: IChannel[],
+    pagination: IPagination,
+}
+
+interface HomeModel extends Model {
+    namespace: 'home';
+    state: HomeState;
+    reducers: {
+        setState: Reducer<HomeState>
+    };
+    // 所有的函数都是生成器函数
+    effects: {
+        fetchCarousels: Effect
+        fetchGuess: Effect
+        fetchChannel: Effect
+    };
+}
+
+const initialState: HomeState = {
+    carousels: [],
+    guess: [],
+    channels: [],
+    pagination: {
+        current: 1,
+        total: 0,
+        hasMore: true,
+    }
+}
+
+const homeModel: HomeModel = {
+    ...
+    effects: {
+        ...
+        *fetchChannel({callback, payload}, {call, put, select}) {
+            const {channels, pagination} = yield select((state: RootState) => state.home)
+
+            // 获取页码
+            let page = 1
+            if(payload && payload.loadMore) {
+                page = pagination.current + 1
+            }
+            const {data} = yield call(axios.get, CHANNEL_URL, {
+                params: {
+                    page
+                }
+            })
+            let newChannels = data.results
+
+            // 加载更多时进行数据拼接
+            if(payload && payload.loadMore) {
+                newChannels = channels.concat(newChannels)
+            }
+
+            let newPagination = data.pagination
+            
+            // 和dispatch作用一样
+            yield put({
+                type: 'setState',
+                payload: {
+                    channels: newChannels,
+                    pagination: {
+                        current: newPagination.current,
+                        total: newPagination.total,
+                        hasMore: newChannels.length < newPagination.total
+                    }
+                }
+            })
+            if(typeof callback === 'function') {
+                callback()
+            }
+        }
+    }
+}
+
+export default homeModel
 ```
 

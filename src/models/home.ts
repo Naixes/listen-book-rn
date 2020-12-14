@@ -1,6 +1,7 @@
 import { Effect, Model } from "dva-core-ts"
 import { Reducer } from "redux"
 import axios from 'axios'
+import { RootState } from "."
 
 // 轮播图
 const CAROUSEL_URL = '/mock/11/carousel'
@@ -28,10 +29,17 @@ export interface IChannel {
     playing: number;
 }
 
+export interface IPagination {
+    current: number;
+    total: number;
+    hasMore: boolean;
+}
+
 interface HomeState {
     carousels: ICarousel[],
     guess: IGuess[],
-    channels: IChannel[]
+    channels: IChannel[],
+    pagination: IPagination,
 }
 
 interface HomeModel extends Model {
@@ -52,15 +60,16 @@ const initialState: HomeState = {
     carousels: [],
     guess: [],
     channels: [],
+    pagination: {
+        current: 1,
+        total: 0,
+        hasMore: true,
+    }
 }
 
 const homeModel: HomeModel = {
     namespace: 'home',
-    state: {
-        carousels: [],
-        guess: [],
-        channels: [],
-    },
+    state: initialState,
     reducers: {
         setState(state = initialState, {payload}) {
             return {
@@ -93,16 +102,43 @@ const homeModel: HomeModel = {
                 }
             })
         },
-        *fetchChannel({payload}, {call, put}) {
-            const {data} = yield call(axios.get, CHANNEL_URL)
+        *fetchChannel({callback, payload}, {call, put, select}) {
+            const {channels, pagination} = yield select((state: RootState) => state.home)
+
+            // 获取页码
+            let page = 1
+            if(payload && payload.loadMore) {
+                page = pagination.current + 1
+            }
+            const {data} = yield call(axios.get, CHANNEL_URL, {
+                params: {
+                    page
+                }
+            })
+            let newChannels = data.results
+
+            // 加载更多时进行数据拼接
+            if(payload && payload.loadMore) {
+                newChannels = channels.concat(newChannels)
+            }
+
+            let newPagination = data.pagination
             
             // 和dispatch作用一样
             yield put({
                 type: 'setState',
                 payload: {
-                    channels: data.results
+                    channels: newChannels,
+                    pagination: {
+                        current: newPagination.current,
+                        total: newPagination.total,
+                        hasMore: newChannels.length < newPagination.total
+                    }
                 }
             })
+            if(typeof callback === 'function') {
+                callback()
+            }
         }
     }
 }
