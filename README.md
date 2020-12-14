@@ -986,17 +986,14 @@ import { Reducer } from "redux"
 import axios from 'axios'
 
 const CAROUSEL_URL = '/mock/11/carousel'
-
 export interface ICarousel {
     id: string;
     image: string;
     corlor: [string, string]
 }
-
 interface HomeState {
     carousels: ICarousel[]
 }
-
 interface HomeModel extends Model {
     namespace: 'home';
     state: HomeState;
@@ -1008,11 +1005,9 @@ interface HomeModel extends Model {
         fetchCarousels: Effect
     };
 }
-
 const initialState: HomeState = {
     carousels: []
 }
-
 const homeModel: HomeModel = {
     namespace: 'home',
     state: {
@@ -1030,8 +1025,6 @@ const homeModel: HomeModel = {
         *fetchCarousels({payload}, {call, put}) {
             // 解构出data
             const {data} = yield call(axios.get, CAROUSEL_URL)
-            console.log('data', data);
-            
             // 和dispatch作用一样
             yield put({
                 type: 'setState',
@@ -1057,18 +1050,14 @@ const mapStateToProps = ({home, loading}: RootState) => ({
     carousels: home.carousels,
     loading: loading.effects['home/fetchCarousels']
 })
-
 // 状态映射
 const connector = connect(mapStateToProps)
-
 type ModelState = ConnectedProps<typeof connector>
-
 // 继承 model state
 interface IProps extends ModelState {
     // navigation传过来的参数，可进行路由跳转
     navigation: RootStackProps
 }
-
 class Home extends React.Component<IProps> {
     componentDidMount() {
         const {dispatch} = this.props
@@ -1078,7 +1067,6 @@ class Home extends React.Component<IProps> {
     }
     render() {
         const {carousels} = this.props
-        console.log(carousels);
         
         return (
             <View>
@@ -1087,10 +1075,13 @@ class Home extends React.Component<IProps> {
         )
     }
 }
-
 export default connector(Home)
 ```
 
 > 报错uncaught at _callee3 at _callee3
 
 原因：yapi服务无法访问导致，修改为本地ip即可
+
+#### 猜你喜欢
+
+封装Touchable组件

@@ -1,9 +1,10 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, Button } from 'react-native'
+import { ScrollView } from 'react-native'
 import { connect, ConnectedProps } from 'react-redux'
 import { RootState } from '@/models/index'
 import { RootStackProps } from '@/navigator/index'
-import Carousel from '@/pages/Home/Carousel'
+import Carousel from './Carousel'
+import Guess from './Guess'
 
 const mapStateToProps = ({home, loading}: RootState) => ({
     carousels: home.carousels,
@@ -30,12 +31,13 @@ class Home extends React.Component<IProps> {
     }
     render() {
         const {carousels} = this.props
-        console.log(carousels);
         
         return (
-            <View>
+            // 滚动视图
+            <ScrollView>
                 <Carousel data={carousels}/>
-            </View>
+                <Guess />
+            </ScrollView>
         )
     }
 }
