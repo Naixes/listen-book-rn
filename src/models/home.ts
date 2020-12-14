@@ -6,6 +6,8 @@ import axios from 'axios'
 const CAROUSEL_URL = '/mock/11/carousel'
 // 猜你喜欢
 const GUESS_URL = '/mock/11/guess'
+// 首页列表
+const CHANNEL_URL = '/mock/11/channel'
 
 export interface ICarousel {
     id: string;
@@ -17,10 +19,19 @@ export interface IGuess {
     title: string;
     image: string;
 }
+export interface IChannel {
+    id: string;
+    title: string;
+    image: string;
+    remark: string;
+    played: number;
+    playing: number;
+}
 
 interface HomeState {
     carousels: ICarousel[],
-    guess: IGuess[]
+    guess: IGuess[],
+    channels: IChannel[]
 }
 
 interface HomeModel extends Model {
@@ -33,19 +44,22 @@ interface HomeModel extends Model {
     effects: {
         fetchCarousels: Effect
         fetchGuess: Effect
+        fetchChannel: Effect
     };
 }
 
 const initialState: HomeState = {
     carousels: [],
-    guess: []
+    guess: [],
+    channels: [],
 }
 
 const homeModel: HomeModel = {
     namespace: 'home',
     state: {
         carousels: [],
-        guess: []
+        guess: [],
+        channels: [],
     },
     reducers: {
         setState(state = initialState, {payload}) {
@@ -76,6 +90,17 @@ const homeModel: HomeModel = {
                 type: 'setState',
                 payload: {
                     guess: data
+                }
+            })
+        },
+        *fetchChannel({payload}, {call, put}) {
+            const {data} = yield call(axios.get, CHANNEL_URL)
+            
+            // 和dispatch作用一样
+            yield put({
+                type: 'setState',
+                payload: {
+                    channels: data.results
                 }
             })
         }

@@ -1,13 +1,17 @@
 import React from 'react'
-import { ScrollView } from 'react-native'
+import { FlatList, ListRenderItemInfo, ScrollView, View } from 'react-native'
 import { connect, ConnectedProps } from 'react-redux'
+
 import { RootState } from '@/models/index'
 import { RootStackProps } from '@/navigator/index'
 import Carousel from './Carousel'
 import Guess from './Guess'
+import ChannelItem from './ChannelItem'
+import { IChannel } from '@/models/home'
 
 const mapStateToProps = ({home, loading}: RootState) => ({
     carousels: home.carousels,
+    channels: home.channels,
     loading: loading.effects['home/fetchCarousels']
 })
 
@@ -28,16 +32,29 @@ class Home extends React.Component<IProps> {
         dispatch({
             type: 'home/fetchCarousels'
         })
+        dispatch({
+            type: 'home/fetchChannel'
+        })
     }
-    render() {
-        const {carousels} = this.props
-        
+    renderItem = ({item}: ListRenderItemInfo<IChannel>) => {
         return (
-            // 滚动视图
-            <ScrollView>
+            <ChannelItem item={item}></ChannelItem>
+        )
+    }
+    get header() {
+        const {carousels} = this.props
+        return (
+            <View>
                 <Carousel data={carousels}/>
                 <Guess />
-            </ScrollView>
+            </View>
+        )
+    }
+    render() {
+        const {channels} = this.props
+        return (
+            // ScrollView 的子组件不能有 FlatList，使用ListHeaderComponent 属性即可
+            <FlatList  ListHeaderComponent={this.header} data={channels} renderItem={this.renderItem}/>
         )
     }
 }

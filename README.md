@@ -1085,3 +1085,75 @@ export default connector(Home)
 #### 猜你喜欢
 
 封装Touchable组件
+
+滚动视图
+
+#### 首页列表
+
+> 在ScrollView中使用FlatList会有警告
+
+```tsx
+import React from 'react'
+import { FlatList, ListRenderItemInfo, ScrollView, View } from 'react-native'
+import { connect, ConnectedProps } from 'react-redux'
+
+import { RootState } from '@/models/index'
+import { RootStackProps } from '@/navigator/index'
+import Carousel from './Carousel'
+import Guess from './Guess'
+import ChannelItem from './ChannelItem'
+import { IChannel } from '@/models/home'
+
+...
+
+class Home extends React.Component<IProps> {
+    componentDidMount() {
+        const {dispatch} = this.props
+        dispatch({
+            type: 'home/fetchCarousels'
+        })
+        dispatch({
+            type: 'home/fetchChannel'
+        })
+    }
+    renderItem = ({item}: ListRenderItemInfo<IChannel>) => {
+        return (
+            <ChannelItem item={item}></ChannelItem>
+        )
+    }
+    get header() {
+        const {carousels} = this.props
+        return (
+            <View>
+                <Carousel data={carousels}/>
+                <Guess />
+            </View>
+        )
+    }
+    render() {
+        const {channels} = this.props
+        return (
+            // ScrollView 的子组件不能有 FlatList，使用ListHeaderComponent 属性即可
+            <FlatList  ListHeaderComponent={this.header} data={channels} renderItem={this.renderItem}/>
+        )
+    }
+}
+
+export default connector(Home)
+```
+
+安卓端不支持阴影效果，支持投影效果（比阴影更明显，只有一个属性，会改变层级）
+
+```css
+item: {
+    ...
+    // 阴影效果
+    shadowOffset: {width: 0, height: 5},
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    shadowColor: '#ccc',
+    // 投影效果
+    elevation: 80,
+},
+```
+
