@@ -17,7 +17,7 @@ const connector = connect(mapStateToProps)
 
 type ModelState = ConnectedProps<typeof connector>
 
-class Guess extends React.Component<ModelState> {
+class Guess extends React.PureComponent<ModelState> {
     componentDidMount() {
         this.fetch()
     }
@@ -27,10 +27,12 @@ class Guess extends React.Component<ModelState> {
             type: 'home/fetchGuess'
         })
     }
+    onPress = () => {
+      console.log('xxx');
+    }
     renderItem({item}: {item: IGuess}) {
         return (
-            <Touchable style={styles.item} onPress={() => {console.log('xxx');}
-            }>
+            <Touchable style={styles.item} onPress={this.onPress}>
                 <Image style={styles.thumbnail} source={{uri: item.image}}></Image>
                 <Text numberOfLines={2} style={styles.title}>{item.title}</Text>
             </Touchable>

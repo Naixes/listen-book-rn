@@ -7,13 +7,19 @@ import { IChannel } from '@/models/home';
 
 interface IProps {
     item: IChannel
+    onPress: (data: IChannel) => void
 }
 
-class ChannelItem extends React.Component<IProps> {
+// 父组件状态改变时，子组件都会被重新渲染，可以使用PureComponents进行自动判断优化子组件
+class ChannelItem extends React.PureComponent<IProps> {
+    onPress = () => {
+        const {item, onPress} = this.props
+        onPress(item)
+    }
     render() {
         const {item} = this.props
         return (
-            <Touchable style={styles.container}>
+            <Touchable onPress={this.onPress} style={styles.container}>
               <View style={styles.item}>
                 <Image source={{uri: item.image}} style={styles.image} />
                 <View style={styles.rightView}>

@@ -36,9 +36,12 @@ class Home extends React.Component<IProps> {
             type: 'home/fetchChannel'
         })
     }
+    onPress = (data: IChannel) => {
+        console.log(data);
+    }
     renderItem = ({item}: ListRenderItemInfo<IChannel>) => {
         return (
-            <ChannelItem item={item}></ChannelItem>
+            <ChannelItem onPress={this.onPress} item={item}></ChannelItem>
         )
     }
     get header() {
@@ -50,11 +53,20 @@ class Home extends React.Component<IProps> {
             </View>
         )
     }
+    keyExtractor = (item: IChannel) => {
+        return item.id
+    }
     render() {
         const {channels} = this.props
         return (
             // ScrollView 的子组件不能有 FlatList，使用ListHeaderComponent 属性即可
-            <FlatList  ListHeaderComponent={this.header} data={channels} renderItem={this.renderItem}/>
+            <FlatList
+                ListHeaderComponent={this.header}
+                data={channels}
+                renderItem={this.renderItem}
+                // keyExtractor生成不重复的key，减少重新渲染，不指定时默认使用data的key或下标
+                keyExtractor={this.keyExtractor}
+            />
         )
     }
 }

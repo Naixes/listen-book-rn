@@ -1157,3 +1157,47 @@ item: {
 },
 ```
 
+##### 优化
+
+在父组件处理业务逻辑，保持子组件纯粹
+
+父组件状态改变时，子组件都会被重新渲染，可以使用PureComponents进行自动判断（浅对比）优化子组件，因此尽量不要直接给组件传递字面量属性或者匿名函数，否则使用PureComponents没有意义。函数式组件则使用memo进行优化
+
+FlatList的keyExtractor
+
+```tsx
+...
+class Home extends React.Component<IProps> {
+    ...
+    // 在父组件处理业务逻辑
+    onPress = (data: IChannel) => {
+        console.log(data);
+    }
+    renderItem = ({item}: ListRenderItemInfo<IChannel>) => {
+        return (
+            // 不要在这里使用匿名函数
+            <ChannelItem onPress={this.onPress} item={item}></ChannelItem>
+        )
+    }
+    ...
+    keyExtractor = (item: IChannel) => {
+        return item.id
+    }
+    render() {
+        const {channels} = this.props
+        return (
+            // ScrollView 的子组件不能有 FlatList，使用ListHeaderComponent 属性即可
+            <FlatList
+                ListHeaderComponent={this.header}
+                data={channels}
+                renderItem={this.renderItem}
+                // keyExtractor生成不重复的key，减少重新渲染，不指定时默认使用data的key或下标
+                keyExtractor={this.keyExtractor}
+            />
+        )
+    }
+}
+
+export default connector(Home)
+```
+

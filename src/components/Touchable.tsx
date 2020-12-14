@@ -1,7 +1,7 @@
 import React from 'react'
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 
-const Touchable: React.FC<TouchableOpacityProps> = (props) => {
+const Touchable: React.FC<TouchableOpacityProps> = React.memo((props) => {
     const {style, ...rest} = props
     return (
         <TouchableOpacity
@@ -10,6 +10,6 @@ const Touchable: React.FC<TouchableOpacityProps> = (props) => {
             {...rest}
         ></TouchableOpacity>
     )
-}
+})
 
 export default Touchable
