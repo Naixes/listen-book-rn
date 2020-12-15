@@ -1,10 +1,10 @@
 import React from 'react'
-import { FlatList, ListRenderItemInfo, StyleSheet, Text, View } from 'react-native'
+import { FlatList, ListRenderItemInfo, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, Text, View } from 'react-native'
 import { connect, ConnectedProps } from 'react-redux'
 
 import { RootState } from '@/models/index'
 import { RootStackProps } from '@/navigator/index'
-import Carousel from './Carousel'
+import Carousel, { itemHeight } from './Carousel'
 import Guess from './Guess'
 import ChannelItem from './ChannelItem'
 import { IChannel } from '@/models/home'
@@ -13,7 +13,8 @@ const mapStateToProps = ({home, loading}: RootState) => ({
     carousels: home.carousels,
     channels: home.channels,
     hasMore: home.pagination.hasMore,
-    loading: loading.effects['home/fetchChannel']
+    loading: loading.effects['home/fetchChannel'],
+    gradientVisible: home.gradientVisible
 })
 
 // 状态映射
@@ -57,8 +58,10 @@ class Home extends React.Component<IProps, IState> {
         const {carousels} = this.props
         return (
             <View>
-                <Carousel data={carousels}/>
-                <Guess />
+                <Carousel />
+                <View style={styles.guessWrapper}>
+                    <Guess />
+                </View>
             </View>
         )
     }
@@ -120,6 +123,21 @@ class Home extends React.Component<IProps, IState> {
             }
         })
     }
+    onScroll = ({nativeEvent}: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const {dispatch, gradientVisible} = this.props
+
+        const offsetY = nativeEvent.contentOffset.y
+        let newGradientVisible = itemHeight > offsetY
+
+        if(gradientVisible !== newGradientVisible) {
+            dispatch({
+                type: 'home/setState',
+                payload: {
+                    gradientVisible: newGradientVisible
+                }
+            })
+        }
+    }
     render() {
         const {channels} = this.props
         const {refreshing} = this.state
@@ -139,6 +157,8 @@ class Home extends React.Component<IProps, IState> {
                 // 上拉
                 onEndReached={this.onEndReached}
                 onEndReachedThreshold={0.2}
+                // 监听滚动事件
+                onScroll={this.onScroll}
             />
         )
     }
@@ -152,6 +172,9 @@ const styles = StyleSheet.create({
   text: {
     color: '#333',
   },
+  guessWrapper: {
+      backgroundColor: '#fff',
+  }
 });
 
 export default connector(Home)

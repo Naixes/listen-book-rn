@@ -4,6 +4,8 @@ import {StyleSheet, View } from 'react-native'
 
 import {viewportWidth, widFromPer, heiFromPer} from '@/utils/index'
 import {ICarousel} from '@/models/home'
+import { RootState } from '@/models/index'
+import { connect, ConnectedProps } from 'react-redux'
 
 // const data = [
 //     "https://images.pexels.com/photos/2611812/pexels-photo-2611812.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260",
@@ -12,28 +14,37 @@ import {ICarousel} from '@/models/home'
 //     "https://ssyerv1.oss-cn-hangzhou.aliyuncs.com/picture/2fff76db96c6444eb39fda6ef32f2842.jpg!sswm"
 // ]
 
-interface IProps {
-    data: ICarousel[]
-}
-
 const itemWidth = widFromPer(90) + widFromPer(3) * 2
-const itemHeight = heiFromPer(26)
+export const itemHeight = heiFromPer(26)
+
+const mapStateToProps = ({home}: RootState) => ({
+    data: home.carousels,
+    activeCarouselIndex: home.activeCarouselIndex,
+})
+
+// 状态映射
+const connector = connect(mapStateToProps)
+
+type ModelState = ConnectedProps<typeof connector>
+
+// 继承 model state
+interface IProps extends ModelState {}
 
 class Carousel extends React.Component<IProps> {
-    state = {
-        activeIndex: 0
-    }
-
     snapHandler = (index: number) => {
-        this.setState({
-            activeIndex: index
+        const {dispatch} = this.props
+        // 更新当前轮播图下标
+        dispatch({
+            type: 'home/setState',
+            payload: {
+                activeCarouselIndex: index
+            }
         })
     }
 
     // get表示是一个属性
     get pagination() {
-        const {activeIndex} = this.state
-        const {data} = this.props
+        const {data, activeCarouselIndex} = this.props
         return (
             <View style={styles.paginationWrapper}>
                 <Pagination
@@ -41,7 +52,7 @@ class Carousel extends React.Component<IProps> {
                     dotContainerStyle={styles.dotContainer}
                     dotStyle={styles.dotStyle}
                     dotsLength={data.length}
-                    activeDotIndex={activeIndex}
+                    activeDotIndex={activeCarouselIndex}
                     inactiveDotScale={0.7}
                     inactiveDotOpacity={0.6}
                 ></Pagination>
@@ -120,4 +131,4 @@ const styles = StyleSheet.create({
     }
 })
 
-export default Carousel
+export default connector(Carousel)

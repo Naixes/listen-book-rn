@@ -24,27 +24,43 @@ export type BottomTabParamList = {
 
 const Tab = createBottomTabNavigator<BottomTabParamList>()
 
-function getHeaderTile(route: Route) {
-    // 获取当前路由名称
-    const name = getFocusedRouteNameFromRoute(route)
-    const routeName = name ? name : route.params ? route.params.screen : 'Home'
+function getHeaderTile(name: string) {
     let Titles = new Map([
         ['HomeTabs', '首页'],
         ['Listen', '我听'],
         ['Found', '发现'],
         ['Account', '我的'],
     ]);
-    console.log(routeName);
     
-    return Titles.get(routeName as string)
+    return Titles.get(name)
 }
 
 class BottomTabs extends React.Component<IProps> {
+    componentDidMount() {
+        this.setHeaderOptions()
+    }
     componentDidUpdate() {
+        this.setHeaderOptions()
+    }
+
+    // 设置头部标题栏
+    setHeaderOptions = () => {
         const {navigation, route} = this.props
-        navigation.setOptions({
-            headerTitle: getHeaderTile(route)
-        })
+        // 首页时隐藏标题
+        // 获取当前路由名称
+        const name = getFocusedRouteNameFromRoute(route)
+        const routeName = name ? name : route.params ? route.params.screen : 'HomeTabs'
+        if(routeName === 'HomeTabs') {
+            navigation.setOptions({
+                headerTransparent: true,
+                headerTitle: ''
+            })
+        }else {
+            navigation.setOptions({
+                headerTransparent: false,
+                headerTitle: getHeaderTile(routeName as string)
+            })
+        }
     }
 
     render()  {

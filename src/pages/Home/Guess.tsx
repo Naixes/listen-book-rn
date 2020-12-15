@@ -69,7 +69,7 @@ class Guess extends React.PureComponent<ModelState> {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     borderRadius: 8,
     // padding: 2,
     margin: 6,

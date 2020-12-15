@@ -991,7 +991,7 @@ const CAROUSEL_URL = '/mock/11/carousel'
 export interface ICarousel {
     id: string;
     image: string;
-    corlor: [string, string]
+    color: [string, string]
 }
 interface HomeState {
     carousels: ICarousel[]
@@ -1218,20 +1218,6 @@ class Home extends React.Component<IProps, IState> {
     state = {
         refreshing: false
     }
-    componentDidMount() {
-        const {dispatch} = this.props
-        dispatch({
-            type: 'home/fetchCarousels'
-        })
-        dispatch({
-            type: 'home/fetchChannel'
-        })
-    }
-    renderItem = ({item}: ListRenderItemInfo<IChannel>) => {
-        return (
-            <ChannelItem onPress={this.onPress} item={item}></ChannelItem>
-        )
-    }
     ...
     // 加载提示
     get footer() {
@@ -1258,9 +1244,6 @@ class Home extends React.Component<IProps, IState> {
                 <Text style={styles.text}>暂无数据</Text>
             </View>
         )
-    }
-    keyExtractor = (item: IChannel) => {
-        return item.id
     }
     // 加载更多
     onEndReached = () => {
@@ -1300,10 +1283,7 @@ class Home extends React.Component<IProps, IState> {
                 ListHeaderComponent={this.header}
                 ListFooterComponent={this.footer}
                 ListEmptyComponent={this.empty}
-                data={channels}
-                renderItem={this.renderItem}
-                // keyExtractor生成不重复的key，减少重新渲染，不指定时默认使用data的key或下标
-                keyExtractor={this.keyExtractor}
+                ...
                 // 下拉
                 onRefresh={this.onRefresh}
                 refreshing={refreshing}
@@ -1419,5 +1399,249 @@ const homeModel: HomeModel = {
 }
 
 export default homeModel
+```
+
+#### 自定义顶部标签
+
+##### 顶部标签布局
+
+首页隐藏标题栏
+
+```tsx
+// navigator/BottomTabs.tsx
+...
+
+function getHeaderTile(name: string) {
+    let Titles = new Map([
+        ['HomeTabs', '首页'],
+        ['Listen', '我听'],
+        ['Found', '发现'],
+        ['Account', '我的'],
+    ]);
+    
+    return Titles.get(name)
+}
+
+class BottomTabs extends React.Component<IProps> {
+    componentDidMount() {
+        this.setHeaderOptions()
+    }
+    componentDidUpdate() {
+        this.setHeaderOptions()
+    }
+
+    // 设置头部标题栏
+    setHeaderOptions = () => {
+        const {navigation, route} = this.props
+        // 首页时隐藏标题
+        // 获取当前路由名称
+        const name = getFocusedRouteNameFromRoute(route)
+        const routeName = name ? name : route.params ? route.params.screen : 'HomeTabs'
+        if(routeName === 'HomeTabs') {
+            navigation.setOptions({
+                headerTransparent: true,
+                headerTitle: ''
+            })
+        }else {
+            navigation.setOptions({
+                headerTransparent: false,
+                headerTitle: getHeaderTile(routeName as string)
+            })
+        }
+    }
+
+    render()  {
+        ...
+    }
+}
+
+export default BottomTabs
+```
+
+在原有顶部标签组件基础上进行修改
+
+```tsx
+// navigator/HomeTabs.tsx
+import React from 'react'
+import {createMaterialTopTabNavigator, MaterialTopTabBarProps} from '@react-navigation/material-top-tabs'
+
+...
+
+const Tab = createMaterialTopTabNavigator()
+
+class HomeTabs extends React.Component {
+    renderTabBar = (props: MaterialTopTabBarProps) => {
+        // 在原有组件基础上进行修改
+        return (
+            <TopTabBarWrapper {...props}></TopTabBarWrapper>
+        )
+    }
+    render() {
+        return (
+            <Tab.Navigator
+                // 设置tab内容透明背景色
+                sceneContainerStyle={styles.sceneContainer}
+                // 自定义tabBar
+                tabBar={this.renderTabBar}
+                ...
+            >
+                <Tab.Screen
+                    name="Home"
+                    component={Home}
+                    options={{
+                        tabBarLabel: "首页"
+                    }}
+                ></Tab.Screen>
+            </Tab.Navigator>
+        )
+    }
+}
+
+const styles = StyleSheet.create({
+    sceneContainer: {
+        backgroundColor: 'transparent'
+    }
+})
+
+export default HomeTabs
+```
+
+- 顶部标签栏和系统状态栏重叠，需要获取系统状态栏的高度。ios不能直接获取并且依赖机型，需要使用库`react-native-iphone-X-helper`（堆栈式导航器的依赖库）的`getStatusBarHeight()`方法
+
+##### 添加渐变色背景
+
+- `yarn add react-native-linear-gradient`，ios需要链接
+- 动态改变颜色，过渡效果`yarn add react-native-linear-animated-gradient-transition`替换之前的
+
+- 轮播图不可见时取消渐变更改文字颜色（FlatList监听滚动事件），猜你喜欢覆盖渐变色（背景色设为白色）
+
+```tsx
+import Touchable from '@/components/Touchable'
+import { RootState } from '@/models/index'
+import { MaterialTopTabBar, MaterialTopTabBarProps } from '@react-navigation/material-top-tabs'
+import React from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import {getStatusBarHeight} from 'react-native-iphone-x-helper'
+import LinearAnimatedGradientTransition from 'react-native-linear-animated-gradient-transition'
+import { connect, ConnectedProps } from 'react-redux'
+
+const mapStateToProps = ({home}: RootState) => {
+  return {
+    gradientVisible: home.gradientVisible,
+    linearColors: home.carousels && home.carousels.length > 0 ? home.carousels[home.activeCarouselIndex].colors : undefined
+  }
+}
+const connector = connect(mapStateToProps)
+
+type ModelState = ConnectedProps<typeof connector>
+type IProps = MaterialTopTabBarProps & ModelState
+
+class TopTabBarWrapper extends React.Component<IProps> {
+  get linearGradient() {
+    const {linearColors = ['#fff', '#f86442'], gradientVisible} = this.props
+    if(gradientVisible) {
+      return (
+        <LinearAnimatedGradientTransition colors={linearColors} style={styles.gradient}></LinearAnimatedGradientTransition>
+      )
+    }
+    return null
+  }
+  render() {
+    let {gradientVisible, indicatorStyle, ...restProps} = this.props
+
+    let textStyle = styles.blackText
+    let activeTintColor = '#f86442'
+
+    // 渐变显示时的文字颜色
+    if(gradientVisible) {
+      textStyle = styles.text
+      activeTintColor = '#fff'
+      if(indicatorStyle) {
+        indicatorStyle = StyleSheet.compose(indicatorStyle, styles.whiteBackgroundColor)
+      }
+    }
+
+    return (
+      <View style={styles.container}>
+        {/* 渐变色 */}
+        {this.linearGradient}
+        <View style={styles.topTabBarView}>
+          <MaterialTopTabBar 
+            style={styles.tabBar}
+            {...restProps}
+            indicatorStyle={indicatorStyle}
+            activeTintColor={activeTintColor}
+          ></MaterialTopTabBar>
+          <Touchable style={styles.categoryBtn}>
+            <Text style={textStyle}>分类</Text>
+          </Touchable>
+        </View>
+        <View style={styles.searchBar}>
+          <Touchable style={styles.searchBtn}>
+            <Text style={textStyle}>搜索按钮</Text>
+          </Touchable>
+          <Touchable style={styles.historyBtn}>
+            <Text style={textStyle}>历史记录</Text>
+          </Touchable>
+        </View>
+      </View>
+    )
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    paddingTop: getStatusBarHeight(),
+  },
+  gradient: {
+    // 占据整个父容器
+    ...StyleSheet.absoluteFillObject,
+    height: 240,
+  },
+  topTabBarView: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tabBar: {
+      flex: 1,
+      elevation: 0,
+      overflow: "hidden",
+      backgroundColor: 'transparent'
+  },
+  categoryBtn: {
+    paddingHorizontal: 10,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: '#ccc',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 7,
+    paddingHorizontal: 15,
+  },
+  searchBtn: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: 12,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  historyBtn: {
+    marginLeft: 24,
+  },
+  text: {
+    color: '#fff',
+  },
+  blackText: {
+    color: '#333',
+  },
+  whiteBackgroundColor: {
+    backgroundColor: '#fff'
+  },
+});
+
+export default connector(TopTabBarWrapper)
 ```
 

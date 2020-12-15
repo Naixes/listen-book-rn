@@ -1,14 +1,27 @@
 import React from 'react'
-import {createMaterialTopTabNavigator} from '@react-navigation/material-top-tabs'
+import {createMaterialTopTabNavigator, MaterialTopTabBarProps} from '@react-navigation/material-top-tabs'
+
 import Home from '@/pages/Home/index'
+import TopTabBarWrapper from '@/pages/views/TopTabBarWrapper'
+import { StyleSheet } from 'react-native'
 
 const Tab = createMaterialTopTabNavigator()
 
 class HomeTabs extends React.Component {
+    renderTabBar = (props: MaterialTopTabBarProps) => {
+        // 在原有组件基础上进行修改
+        return (
+            <TopTabBarWrapper {...props}></TopTabBarWrapper>
+        )
+    }
     render() {
         return (
             <Tab.Navigator
                 lazy
+                // 设置tab内容透明背景色
+                sceneContainerStyle={styles.sceneContainer}
+                // 自定义tabBar
+                tabBar={this.renderTabBar}
                 tabBarOptions={{
                     scrollEnabled: true,
                     tabStyle: {
@@ -36,5 +49,11 @@ class HomeTabs extends React.Component {
         )
     }
 }
+
+const styles = StyleSheet.create({
+    sceneContainer: {
+        backgroundColor: 'transparent'
+    }
+})
 
 export default HomeTabs

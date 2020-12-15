@@ -13,7 +13,7 @@ const CHANNEL_URL = '/mock/11/channel'
 export interface ICarousel {
     id: string;
     image: string;
-    corlor: [string, string];
+    colors: [string, string];
 }
 export interface IGuess {
     id: string;
@@ -37,6 +37,10 @@ export interface IPagination {
 
 interface HomeState {
     carousels: ICarousel[],
+    // 当前轮播图下标
+    activeCarouselIndex: number,
+    // 是否显示渐变色
+    gradientVisible: boolean,
     guess: IGuess[],
     channels: IChannel[],
     pagination: IPagination,
@@ -58,6 +62,8 @@ interface HomeModel extends Model {
 
 const initialState: HomeState = {
     carousels: [],
+    activeCarouselIndex: 0,
+    gradientVisible: true,
     guess: [],
     channels: [],
     pagination: {
