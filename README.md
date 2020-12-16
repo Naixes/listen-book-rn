@@ -1645,3 +1645,299 @@ const styles = StyleSheet.create({
 export default connector(TopTabBarWrapper)
 ```
 
+### 分类模块
+
+#### 需求分析
+
+包含我的分类和其他分类两部分
+
+我的分类
+
+- 可删除
+- 拖拽排序
+- 默认模块不可删除拖拽
+
+其他分类
+
+- 可添加
+
+完成保存分类并跳转首页，首页动态渲染
+
+#### 本地数据存储
+
+- 安装本地库`yarn add @react-native-community/async-storage`，ios需链接
+
+一般不会直接使用，仅支持保存字符串类型，安装封装库`yarn add react-native-storage`
+
+- 配置
+
+```ts
+// config.storage.ts
+import AsyncStorage from '@react-native-community/async-storage'
+import Storage, { LoadParams } from 'react-native-storage'
+
+const storage = new Storage({
+    // 最大容量，超出后会删除，循环使用
+    size: 1000,
+    // 数据存储引擎，不设置会存储在内存中，浏览器则传 入window.localstorage
+    storageBackend: AsyncStorage,
+    // 传 null 永远不会过期
+    defaultExpires: 1000 * 3600 * 24 * 7,
+    enableCache: true,
+    // 获取数据时 storage 中没有或过期时会调用 sync 中的对应方法返回最新数据
+    // 可以在 model 中添加
+    sync: {}
+})
+
+// 从 storage 中获取数据
+// 重新封装是为了保持 this 指向
+export const load = (params: LoadParams) => {
+    return storage.load(params)
+}
+
+export default storage
+```
+
+- 使用
+
+dva加载完说有数据之后就会执行subscriptions中的函数
+
+在model中添加storage的sync配置
+
+```ts
+import storage, {load} from "@/config/storage";
+import axios from "axios";
+import { Effect, Model, SubscriptionsMapObject } from "dva-core-ts";
+import {Reducer} from 'redux'
+
+interface ICategory {
+    id: string;
+    name: string;
+    classify?: string;
+}
+
+interface CategoryModelState {
+    myCategorys: ICategory[];
+    categorys: ICategory[];
+}
+
+interface CategoryModel extends Model {
+    namespace: 'category';
+    state: CategoryModelState;
+    effects: {
+        loadData: Effect;
+    };
+    reducers: {
+        setState: Reducer<CategoryModelState>;
+    };
+    // 订阅数据源根据条件调用不同的 subscription
+    subscriptions: SubscriptionsMapObject;
+}
+
+const initialState = {
+    // 默认推荐和vip
+    myCategorys: [
+        {
+            id: 'home',
+            name: '推荐',
+        },
+        {
+            id: 'vip',
+            name: 'Vip',
+        }
+    ],
+    categorys: []
+}
+
+const CATEGROY_URL = '/mock/11/category'
+
+const categoryModel: CategoryModel = {
+    namespace: 'category',
+    state: initialState,
+    effects: {
+        *loadData(_, {call, put}) {
+            // 从 storage 中获取数据
+            const myCategorys = yield call(load, {key: 'myCategorys'})
+            const categorys = yield call(load, {key: 'categorys'})
+            // 保存数据到 state
+            if(myCategorys) {
+                yield put({
+                    type: 'setState',
+                    payload: {
+                        myCategorys,
+                        categorys
+                    }
+                })
+            }else {
+                yield put({
+                    type: 'setState',
+                    payload: {
+                        categorys
+                    }
+                })
+            }
+        }
+    },
+    reducers: {
+        setState(state, {payload}) {
+            return {
+                ...state,
+                ...payload,
+            }
+        }
+    },
+    // dva加载完说有数据之后就会执行 subscriptions 中的函数
+    subscriptions: {
+        setup({dispatch}) {
+            dispatch({
+                type: 'loadData'
+            })
+        },
+        asyncStorage() {
+            // 也可以放在 subscriptions 外面
+            // 获取 categorys 数据
+            storage.sync.categorys = async () => {
+                const data = await axios.get(CATEGROY_URL)
+                return data.data
+            }
+            // myCategorys 只保存在本地
+            storage.sync.myCategorys = () => {
+                return null
+            }
+        }
+    }
+}
+
+export default categoryModel
+```
+
+导出model
+
+```ts
+// models/index.ts
+import {DvaLoadingState} from 'dva-loading-ts'
+
+import home from '@/models/home'
+import category from '@/models/category'
+
+const models = [home, category]
+
+// 导出State类型
+export type RootState = {
+    home: typeof home.state,
+    category: typeof category.state,
+    loading: DvaLoadingState,
+}
+
+export default models
+```
+
+#### 样式布局
+
+使用lodash处理数据`yarn add lodash @types/lodash`
+
+```tsx
+// pages/Category/index.tsx
+import { RootState } from '@/models/index'
+import React from 'react'
+import { ScrollView, Text, View, StyleSheet } from 'react-native'
+import { connect, ConnectedProps } from 'react-redux'
+import _ from 'lodash'
+
+import {ICategory} from '@/models/category'
+import { viewportWidth } from '@/utils/index'
+import Item from './Item'
+
+const mapStateToProps = ({category}: RootState) => {
+    return {
+        myCategorys: category.myCategorys,
+        categorys: category.categorys
+    }
+}
+
+const connector = connect(mapStateToProps)
+
+type ModelState = ConnectedProps<typeof connector>
+
+interface IProps extends ModelState {}
+interface IState {
+    myCategorys: ICategory[]
+}
+
+const itemWrapperWidth = viewportWidth - 10
+const itemWidth = itemWrapperWidth / 4 - 8
+
+class Category extends React.Component<IProps, IState> {
+    state = {
+        myCategorys: this.props.myCategorys
+    }
+    renderItem = (cate: ICategory, index: number) => {
+        return (
+            <Item item={cate}></Item>
+        )
+    }
+    render() {
+        const {categorys} = this.props
+        const {myCategorys} = this.state
+        // groupBy根据回调的返回值进行分组
+        const classifyGroup = _.groupBy(categorys, item => item.classify)
+        return (
+            <ScrollView style={styles.container}>
+                <Text style={styles.myTypeText}>我的分类</Text>
+                <View style={styles.sortWrap}>
+                    {myCategorys.map(this.renderItem)}
+                </View>
+                <View>
+                    {Object.keys(classifyGroup).map(key => {
+                        return (
+                            <View key={key}>
+                                <Text style={styles.myTypeText}>{key}</Text>
+                                <View style={styles.sortWrap}>
+                                    {classifyGroup[key].map(this.renderItem)}
+                                </View>
+                            </View>
+                        )
+                    })}
+                </View>
+            </ScrollView>
+        )
+    }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f3f6f6',
+  },
+  sortWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    // marginHorizontal: -4,
+    padding: 5
+  },
+  item: {
+    width: itemWidth,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 3,
+    margin: 4,
+  },
+  typeNameText: {
+    fontSize: 16,
+    marginBottom: 8,
+    marginTop: 14,
+  },
+  myTypeText: {
+    marginBottom: 8,
+    marginTop: 14,
+    fontSize: 18,
+  },
+});
+
+export default connector(Category)
+```
+
+#### 切换编辑状态
+

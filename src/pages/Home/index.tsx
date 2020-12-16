@@ -55,7 +55,6 @@ class Home extends React.Component<IProps, IState> {
     }
     // 轮播图和猜你喜欢模块
     get header() {
-        const {carousels} = this.props
         return (
             <View>
                 <Carousel />

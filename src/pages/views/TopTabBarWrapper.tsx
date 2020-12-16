@@ -20,13 +20,17 @@ type IProps = MaterialTopTabBarProps & ModelState
 
 class TopTabBarWrapper extends React.Component<IProps> {
   get linearGradient() {
-    const {linearColors = ['#fff', '#f86442'], gradientVisible} = this.props
+    const {linearColors = ['#f86442', '#f2f2f2'], gradientVisible} = this.props
     if(gradientVisible) {
       return (
-        <LinearAnimatedGradientTransition colors={linearColors} style={styles.gradient}></LinearAnimatedGradientTransition>
+        <LinearAnimatedGradientTransition colors={[...linearColors, '#f2f2f2']} style={styles.gradient}></LinearAnimatedGradientTransition>
       )
     }
     return null
+  }
+  goCategory = () => {
+    const {navigation} = this.props
+    navigation.navigate('Category')
   }
   render() {
     let {gradientVisible, indicatorStyle, ...restProps} = this.props
@@ -54,7 +58,7 @@ class TopTabBarWrapper extends React.Component<IProps> {
             indicatorStyle={indicatorStyle}
             activeTintColor={activeTintColor}
           ></MaterialTopTabBar>
-          <Touchable style={styles.categoryBtn}>
+          <Touchable style={styles.categoryBtn} onPress={this.goCategory}>
             <Text style={textStyle}>分类</Text>
           </Touchable>
         </View>

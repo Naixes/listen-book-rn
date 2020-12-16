@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     },
     paginationWrapper: {
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     paginationContainer: {
         position: "absolute",
