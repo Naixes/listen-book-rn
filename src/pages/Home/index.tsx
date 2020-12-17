@@ -1,6 +1,7 @@
 import React from 'react'
 import { FlatList, ListRenderItemInfo, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, Text, View } from 'react-native'
 import { connect, ConnectedProps } from 'react-redux'
+import { RouteProp } from '@react-navigation/native'
 
 import { RootState } from '@/models/index'
 import { RootStackProps } from '@/navigator/index'
@@ -8,14 +9,21 @@ import Carousel, { itemHeight } from './Carousel'
 import Guess from './Guess'
 import ChannelItem from './ChannelItem'
 import { IChannel } from '@/models/home'
+import { HomeTabList } from '@/navigator/HomeTabs'
 
-const mapStateToProps = ({home, loading}: RootState) => ({
-    carousels: home.carousels,
-    channels: home.channels,
-    hasMore: home.pagination.hasMore,
-    loading: loading.effects['home/fetchChannel'],
-    gradientVisible: home.gradientVisible
-})
+const mapStateToProps = (state: RootState, {route}: {route: RouteProp<HomeTabList, string>}) => {
+    // 获取 namespace
+    const {namespace} = route.params
+    const modelState = state[namespace]
+    return {
+        namespace,
+        carousels: modelState.carousels,
+        channels: modelState.channels,
+        hasMore: modelState.pagination.hasMore,
+        loading: state.loading.effects[namespace + '/fetchChannel'],
+        gradientVisible: modelState.gradientVisible
+    }
+}
 
 // 状态映射
 const connector = connect(mapStateToProps)
@@ -37,12 +45,12 @@ class Home extends React.Component<IProps, IState> {
         refreshing: false
     }
     componentDidMount() {
-        const {dispatch} = this.props
+        const {dispatch, namespace} = this.props
         dispatch({
-            type: 'home/fetchCarousels'
+            type: namespace + '/fetchCarousels'
         })
         dispatch({
-            type: 'home/fetchChannel'
+            type: namespace + '/fetchChannel'
         })
     }
     onPress = (data: IChannel) => {
@@ -55,11 +63,12 @@ class Home extends React.Component<IProps, IState> {
     }
     // 轮播图和猜你喜欢模块
     get header() {
+        const {namespace} = this.props
         return (
             <View>
-                <Carousel />
+                <Carousel namespace={namespace} />
                 <View style={styles.guessWrapper}>
-                    <Guess />
+                    <Guess namespace={namespace} />
                 </View>
             </View>
         )
@@ -99,9 +108,9 @@ class Home extends React.Component<IProps, IState> {
         const {loading, hasMore} = this.props
         if(loading || !hasMore) return
 
-        const {dispatch} = this.props
+        const {dispatch, namespace} = this.props
         dispatch({
-            type: 'home/fetchChannel',
+            type: namespace + '/fetchChannel',
             payload: {
                 loadMore: true
             }
@@ -112,9 +121,9 @@ class Home extends React.Component<IProps, IState> {
         this.setState({
             refreshing: true
         })
-        const {dispatch} = this.props
+        const {dispatch, namespace} = this.props
         dispatch({
-            type: 'home/fetchChannel',
+            type: namespace + '/fetchChannel',
             callback: () => {
                 this.setState({
                     refreshing: false
@@ -123,14 +132,14 @@ class Home extends React.Component<IProps, IState> {
         })
     }
     onScroll = ({nativeEvent}: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const {dispatch, gradientVisible} = this.props
+        const {dispatch, gradientVisible, namespace} = this.props
 
         const offsetY = nativeEvent.contentOffset.y
         let newGradientVisible = itemHeight > offsetY
 
         if(gradientVisible !== newGradientVisible) {
             dispatch({
-                type: 'home/setState',
+                type: namespace + '/setState',
                 payload: {
                     gradientVisible: newGradientVisible
                 }

@@ -1,3 +1,4 @@
+import { NavigationState } from '@react-navigation/native'
 import {Dimensions} from 'react-native'
 
 const {width: viewportWidth, height: viewportHeight} = Dimensions.get('window')
@@ -14,9 +15,20 @@ function heiFromPer(percentage: number) {
     return Math.round(value)
 }
 
+// 需要获取现在处于焦点的 tab 的名字
+function getActiveTabName(state: NavigationState) {
+    let route
+    route = state.routes[state.index]
+    while(route.state && route.state.index) {
+        route = state.routes[state.index]
+    }
+    return route.name
+}
+
 export {
     viewportWidth,
     viewportHeight,
     widFromPer,
-    heiFromPer
+    heiFromPer,
+    getActiveTabName
 }

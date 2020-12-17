@@ -17,10 +17,13 @@ import { connect, ConnectedProps } from 'react-redux'
 const itemWidth = widFromPer(90) + widFromPer(3) * 2
 export const itemHeight = heiFromPer(26)
 
-const mapStateToProps = ({home}: RootState) => ({
-    data: home.carousels,
-    activeCarouselIndex: home.activeCarouselIndex,
-})
+const mapStateToProps = (state: RootState, props: ICarouselProps) => {
+    const modelState = state[props.namespace]
+    return {
+        data: modelState.carousels,
+        activeCarouselIndex: modelState.activeCarouselIndex,
+    }
+}
 
 // 状态映射
 const connector = connect(mapStateToProps)
@@ -28,14 +31,17 @@ const connector = connect(mapStateToProps)
 type ModelState = ConnectedProps<typeof connector>
 
 // 继承 model state
-interface IProps extends ModelState {}
+interface ICarouselProps {
+    namespace: string;
+}
+type IProps = ModelState & ICarouselProps
 
 class Carousel extends React.Component<IProps> {
     snapHandler = (index: number) => {
-        const {dispatch} = this.props
+        const {dispatch, namespace} = this.props
         // 更新当前轮播图下标
         dispatch({
-            type: 'home/setState',
+            type: namespace + '/setState',
             payload: {
                 activeCarouselIndex: index
             }

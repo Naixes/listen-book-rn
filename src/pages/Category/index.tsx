@@ -139,7 +139,7 @@ class Category extends React.Component<IProps, IState> {
     render() {
         const {categorys, isEdit} = this.props
         const {myCategorys} = this.state
-        // groupBy根据回调的返回值进行分组
+        // groupBy 根据回调的返回值进行分组
         const classifyGroup = _.groupBy(categorys, item => item.classify)
         return (
             <ScrollView style={styles.container}>

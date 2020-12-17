@@ -1,5 +1,6 @@
 import Touchable from '@/components/Touchable'
 import { RootState } from '@/models/index'
+import { getActiveTabName } from '@/utils/index'
 import { MaterialTopTabBar, MaterialTopTabBarProps } from '@react-navigation/material-top-tabs'
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
@@ -7,10 +8,13 @@ import {getStatusBarHeight} from 'react-native-iphone-x-helper'
 import LinearAnimatedGradientTransition from 'react-native-linear-animated-gradient-transition'
 import { connect, ConnectedProps } from 'react-redux'
 
-const mapStateToProps = ({home}: RootState) => {
+const mapStateToProps = (state: RootState, props: MaterialTopTabBarProps) => {
+  // 需要获取现在处于焦点的 tab 的名字
+  const routeName = getActiveTabName(props.state)
+  const modelState = state[routeName]
   return {
-    gradientVisible: home.gradientVisible,
-    linearColors: home.carousels && home.carousels.length > 0 ? (home.activeCarouselIndex ? home.carousels[home.activeCarouselIndex].colors : undefined) : undefined
+    gradientVisible: modelState.gradientVisible,
+    linearColors: modelState.carousels && modelState.carousels.length > 0 ? (modelState.activeCarouselIndex ? modelState.carousels[modelState.activeCarouselIndex].colors : undefined) : undefined
   }
 }
 const connector = connect(mapStateToProps)

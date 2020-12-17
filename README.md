@@ -2267,3 +2267,122 @@ const styles = StyleSheet.create({
 export default connector(Category)
 ```
 
+#### 动态生成标签导航器
+
+动态生成model，每一个类别都有自己独立的model
+
+`yarn add dva-model-extend`三年未更新，需要自己写ts类型
+
+```ts
+// /index.d.ts
+declare module 'dva-model-extend' {
+    import { Model } from "dva-core-ts";
+    export default function modelExtend(...model: Model[]): Model
+}
+```
+
+修改dva
+
+```ts
+...
+// 每循环一次都会创建，所以使用缓存保证每个model只有一个
+interface Cached {
+    [key: string]: boolean
+}
+const cached: Cached = {
+    home: true
+}
+const registerModel = (model: Model) => {
+    if(!cached[model.namespace]) {
+        // 将 model 插入 dva
+        app.model(model)
+        cached[model.namespace] = true
+    }
+}
+export const createHomeModel = (namespace: string) => {
+    const model = modelExtend(homeModel, {namespace})
+    registerModel(model)
+}
+```
+
+动态生成model
+
+```tsx
+// navigator/HomeTabs.tsx
+...
+export type HomeTabList = {
+    [key: string]: {
+        namespace: string;
+    }
+}
+
+const Tab = createMaterialTopTabNavigator<HomeTabList>()
+
+const mapStateToProps = ({category}: RootState) => {
+    return {
+        myCategorys: category.myCategorys
+    }
+}
+const connector = connect(mapStateToProps)
+type ModelState = ConnectedProps<typeof connector>
+interface IProps extends ModelState {}
+
+class HomeTabs extends React.Component<IProps> {
+    ...
+    renderScreen = (item: ICategory) => {
+        createHomeModel(item.id)
+        return (
+            <Tab.Screen
+                key={item.id}
+                name={item.id}
+                component={Home}
+                options={{
+                    tabBarLabel: item.name
+                }}
+                initialParams={{
+                    // 当前使用的model
+                    namespace: item.id
+                }}
+            ></Tab.Screen>
+        )
+    }
+    render() {
+        const {myCategorys} = this.props
+        return (
+            <Tab.Navigator
+                ...
+            >
+                {/* 动态生成 Tab.Screen */}
+                { myCategorys.map(this.renderScreen) }
+            </Tab.Navigator>
+        )
+    }
+}
+...
+export default connector(HomeTabs)
+```
+
+动态获取model
+
+```tsx
+// pages/Home/index.tsx
+...
+const mapStateToProps = (state: RootState, {route}: {route: RouteProp<HomeTabList, string>}) => {
+    // 获取 namespace
+    const {namespace} = route.params
+    const modelState = state[namespace]
+    return {
+        namespace,
+        carousels: modelState.carousels,
+        channels: modelState.channels,
+        hasMore: modelState.pagination.hasMore,
+        loading: state.loading.effects[namespace + '/fetchChannel'],
+        gradientVisible: modelState.gradientVisible
+    }
+}
+...
+```
+
+其他使用到的页面也需要修改
+
+*TODO：请求接口还未新增类别*

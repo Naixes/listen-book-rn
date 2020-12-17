@@ -7,24 +7,29 @@ import { IGuess } from '@/models/home'
 import Touchable from '@/components/Touchable'
 import Icon from '@/assets/iconfont/index'
 
-const mapStateToProps = ({home}: RootState) => {
-    return {
-        guess: home.guess
-    }
+const mapStateToProps = (state: RootState, props: IGuessProps) => {
+  const modelState = state[props.namespace]
+  return {
+    guess: modelState.guess
+  }
 }
 
 const connector = connect(mapStateToProps)
 
 type ModelState = ConnectedProps<typeof connector>
+interface IGuessProps {
+  namespace: string;
+}
+type IProps = ModelState & IGuessProps
 
-class Guess extends React.PureComponent<ModelState> {
+class Guess extends React.PureComponent<IProps> {
     componentDidMount() {
         this.fetch()
     }
     fetch = () => {
-        const {dispatch} = this.props
+        const {dispatch, namespace} = this.props
         dispatch({
-            type: 'home/fetchGuess'
+            type: namespace + '/fetchGuess'
         })
     }
     onPress = () => {
