@@ -1964,9 +1964,8 @@ export default connector(HeaderRightBtn)
 
 #### 添加删除类别
 
-长按切换到编辑状态
-
 ```tsx
+// pages/Category/index.tsx
 ...
 
 const mapStateToProps = ({category}: RootState) => {
@@ -2122,6 +2121,7 @@ export default connector(Category)
 保存到storage
 
 ```tsx
+// models/category.ts
 ...
 
 interface CategoryModelState {
@@ -2181,5 +2181,89 @@ const categoryModel: CategoryModel = {
 }
 
 export default categoryModel
+```
+
+#### 拖拽功能
+
+`yarn add react-native-drag-sort`
+
+```tsx
+...
+class Category extends React.Component<IProps, IState> {
+    ...
+    // 切换编辑状态，保存数据
+    toggleEdit = () => {
+        const {dispatch, navigation, isEdit} = this.props
+        const {myCategorys} = this.state
+        dispatch({
+            type: 'category/toggle',
+            payload: {
+                myCategorys,
+            }
+        })
+        // 完成时返回首页
+        if(isEdit) {
+            navigation.goBack()
+        }
+    }
+    // 我的分类
+    renderItem = (cate: ICategory, index: number) => {
+        const {isEdit} = this.props
+        const disabled = fixedItem.indexOf(index) > -1
+        return (
+            <Item
+                key={cate.id}
+                disabled={disabled}
+                item={cate}
+                isEdit={isEdit}
+                isSelected
+            ></Item>
+        )
+    }
+    // 其他分类
+    renderUnselectedItem = (cate: ICategory, index: number) => {
+        ...
+    }
+    onSortChange = (data: ICategory[]) => {
+        this.setState({
+            myCategorys: data
+        })
+    }
+    onClickItem = (data: ICategory[], item: ICategory) => {
+        this.onPress(item, data.indexOf(item), true)
+    }
+    render() {
+        const {categorys, isEdit} = this.props
+        const {myCategorys} = this.state
+        // groupBy根据回调的返回值进行分组
+        const classifyGroup = _.groupBy(categorys, item => item.classify)
+        return (
+            <ScrollView style={styles.container}>
+                <Text style={styles.TypeText}>我的分类</Text>
+                <View style={styles.sortWrap}>
+                    <DragSortableView
+                        fixedItems={fixedItem}
+                        dataSource={myCategorys}
+                        renderItem={this.renderItem}
+                        sortable={isEdit}
+                        keyExtractor={item => item.id}
+                        onDataChange={this.onSortChange}
+                        parentWidth={parentWidth}
+                        childrenWidth={itemWidth}
+                        childrenHeight={itemHeight}
+                        onClickItem={this.onClickItem}
+                    />
+                </View>
+                ...
+            </ScrollView>
+        )
+    }
+}
+
+const styles = StyleSheet.create({
+  ...
+});
+
+export default connector(Category)
 ```
 

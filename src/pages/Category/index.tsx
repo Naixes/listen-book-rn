@@ -3,9 +3,10 @@ import React from 'react'
 import { ScrollView, Text, View, StyleSheet } from 'react-native'
 import { connect, ConnectedProps } from 'react-redux'
 import _ from 'lodash'
+import {DragSortableView} from 'react-native-drag-sort'
 
 import {ICategory} from '@/models/category'
-import Item from './Item'
+import Item, { itemHeight, itemWidth, parentWidth } from './Item'
 import { RootStackProps } from '@/navigator/index'
 import HeaderRightBtn from './HeaderRightBtn'
 import Touchable from '@/components/Touchable'
@@ -54,7 +55,7 @@ class Category extends React.Component<IProps, IState> {
     }
     // 切换编辑状态，保存数据
     toggleEdit = () => {
-        const {dispatch} = this.props
+        const {dispatch, navigation, isEdit} = this.props
         const {myCategorys} = this.state
         dispatch({
             type: 'category/toggle',
@@ -62,6 +63,10 @@ class Category extends React.Component<IProps, IState> {
                 myCategorys,
             }
         })
+        // 完成时返回首页
+        if(isEdit) {
+            navigation.goBack()
+        }
     }
     // 长按进入编辑状态
     onLongPress = () => {
@@ -96,17 +101,14 @@ class Category extends React.Component<IProps, IState> {
         const {isEdit} = this.props
         const disabled = fixedItem.indexOf(index) > -1
         return (
-            <Touchable
+            // DragSortableView 内部封装了 Touchable 组件
+            <Item
                 key={cate.id}
-                onPress={() => this.onPress(cate, index, true)}
-            >
-                <Item
-                    disabled={disabled}
-                    item={cate}
-                    isEdit={isEdit}
-                    isSelected
-                ></Item>
-            </Touchable>
+                disabled={disabled}
+                item={cate}
+                isEdit={isEdit}
+                isSelected
+            ></Item>
         )
     }
     // 其他分类
@@ -126,8 +128,16 @@ class Category extends React.Component<IProps, IState> {
             </Touchable>
         )
     }
+    onSortChange = (data: ICategory[]) => {
+        this.setState({
+            myCategorys: data
+        })
+    }
+    onClickItem = (data: ICategory[], item: ICategory) => {
+        this.onPress(item, data.indexOf(item), true)
+    }
     render() {
-        const {categorys} = this.props
+        const {categorys, isEdit} = this.props
         const {myCategorys} = this.state
         // groupBy根据回调的返回值进行分组
         const classifyGroup = _.groupBy(categorys, item => item.classify)
@@ -135,7 +145,18 @@ class Category extends React.Component<IProps, IState> {
             <ScrollView style={styles.container}>
                 <Text style={styles.TypeText}>我的分类</Text>
                 <View style={styles.sortWrap}>
-                    {myCategorys.map(this.renderItem)}
+                    <DragSortableView
+                        fixedItems={fixedItem}
+                        dataSource={myCategorys}
+                        renderItem={this.renderItem}
+                        sortable={isEdit}
+                        keyExtractor={item => item.id}
+                        onDataChange={this.onSortChange}
+                        parentWidth={parentWidth}
+                        childrenWidth={itemWidth}
+                        childrenHeight={itemHeight}
+                        onClickItem={this.onClickItem}
+                    />
                 </View>
                 {Object.keys(classifyGroup).map(key => {
                     return (

@@ -26,6 +26,7 @@
     "react": "16.13.1",
     "react-native": "0.63.3",
     "react-native-config": "^1.4.1",
+    "react-native-drag-sort": "^2.4.2",
     "react-native-gesture-handler": "^1.9.0",
     "react-native-linear-animated-gradient-transition": "^0.1.6",
     "react-native-linear-gradient": "^2.5.6",

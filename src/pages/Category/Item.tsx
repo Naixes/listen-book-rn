@@ -11,8 +11,9 @@ interface IProps {
     isSelected: boolean;
     item: ICategory
 }
-
-const itemWidth = viewportWidth / 4 - 8
+export const parentWidth = viewportWidth
+export const itemWidth = viewportWidth / 4 - 8
+export const itemHeight = 40
 
 class Item extends React.Component<IProps> {
     render() {
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
     },
     itemWrapper: {
         width: itemWidth,
-        height: 40,
+        height: itemHeight,
     },
     item: {
         flex: 1,
