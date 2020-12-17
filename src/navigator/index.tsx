@@ -5,7 +5,7 @@ import React from 'react'
 // Home为标签选择器
 import Home from '@/navigator/BottomTabs'
 import Detail from '@/pages/Detail'
-import { Platform, StyleSheet } from 'react-native'
+import { Platform, StatusBar, StyleSheet } from 'react-native'
 import Category from '@/pages/Category'
 
 // 不能使用interface，缺少索引签名
@@ -40,6 +40,10 @@ class Navigator extends React.Component {
                     // float(ios默认，共用一个标题栏)/screen(android默认)
                     headerMode="screen"
                     screenOptions={{
+                        // 让ios返回样式与安卓统一
+                        headerBackTitleVisible: false,
+                        headerTintColor: '#333',
+
                         headerTitleAlign: "center",
                         // 标题动画
                         headerStyleInterpolator: HeaderStyleInterpolators.forUIKit,
@@ -50,7 +54,12 @@ class Navigator extends React.Component {
                         // 设置手势方向
                         gestureDirection: "horizontal",
                         // 设置状态栏高度，防止渲染时有抖动
-                        // headerStatusBarHeight: StatusBar.currentHeight,
+                        // react-native0.6，1.5时StatusBar.currentHeight为undefined；0.62版本返回null，所以增加判断
+                        // ...Platform.select({
+                        //     android: {
+                        //         headerStatusBarHeight: StatusBar.currentHeight,
+                        //     }
+                        // }),
                         // 统一标题样式
                         headerStyle: {
                             ...Platform.select({
@@ -66,9 +75,23 @@ class Navigator extends React.Component {
                 >
                     {/* options和screenOptions内容一样，options优先级更高 */}
                     {/* 嵌套标签选择器，标题动态显示 */}
-                    <Stack.Screen options={{headerTitle: "首页"}} name="BottomTab" component={Home} />
-                    <Stack.Screen options={{headerTitle: "分类"}} name="Category" component={Category} />
-                    <Stack.Screen options={{headerTitle: "详情"}} name="Detail" component={Detail} />
+                    <Stack.Screen
+                        options={{headerTitle: "首页"}}
+                        name="BottomTab"
+                        component={Home} 
+                    />
+                    <Stack.Screen
+                        options={{
+                            headerTitle: "分类",
+                        }}
+                        name="Category"
+                        component={Category} 
+                    />
+                    <Stack.Screen
+                        options={{headerTitle: "详情"}}
+                        name="Detail"
+                        component={Detail} 
+                    />
                 </Stack.Navigator>
             </NavigationContainer>
         )

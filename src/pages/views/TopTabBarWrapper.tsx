@@ -10,7 +10,7 @@ import { connect, ConnectedProps } from 'react-redux'
 const mapStateToProps = ({home}: RootState) => {
   return {
     gradientVisible: home.gradientVisible,
-    linearColors: home.carousels && home.carousels.length > 0 ? home.carousels[home.activeCarouselIndex].colors : undefined
+    linearColors: home.carousels && home.carousels.length > 0 ? (home.activeCarouselIndex ? home.carousels[home.activeCarouselIndex].colors : undefined) : undefined
   }
 }
 const connector = connect(mapStateToProps)

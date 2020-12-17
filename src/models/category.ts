@@ -2,6 +2,7 @@ import storage, {load} from "@/config/storage";
 import axios from "axios";
 import { Effect, Model, SubscriptionsMapObject } from "dva-core-ts";
 import {Reducer} from 'redux'
+import { RootState } from ".";
 
 export interface ICategory {
     id: string;
@@ -10,6 +11,7 @@ export interface ICategory {
 }
 
 interface CategoryModelState {
+    isEdit: boolean;
     myCategorys: ICategory[];
     categorys: ICategory[];
 }
@@ -19,6 +21,7 @@ interface CategoryModel extends Model {
     state: CategoryModelState;
     effects: {
         loadData: Effect;
+        toggle: Effect;
     };
     reducers: {
         setState: Reducer<CategoryModelState>;
@@ -28,6 +31,7 @@ interface CategoryModel extends Model {
 }
 
 const initialState = {
+    isEdit: false,
     // 默认推荐和vip
     myCategorys: [
         {
@@ -67,6 +71,24 @@ const categoryModel: CategoryModel = {
                     payload: {
                         categorys
                     }
+                })
+            }
+        },
+        *toggle({payload}, {put, select}) {
+            const category = yield select(({category}: RootState) => category)
+            // 状态切换，保存数据到 dva
+            yield put({
+                type: 'setState',
+                payload: {
+                    isEdit: !category.isEdit,
+                    myCategorys: payload.myCategorys,
+                }
+            })
+            // 保存数据到本地 storage
+            if(category.isEdit) {
+                storage.save({
+                    key: 'myCategorys',
+                    data: payload.myCategorys,
                 })
             }
         }

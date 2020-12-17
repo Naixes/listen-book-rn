@@ -5,11 +5,14 @@ import { connect, ConnectedProps } from 'react-redux'
 import _ from 'lodash'
 
 import {ICategory} from '@/models/category'
-import { viewportWidth } from '@/utils/index'
 import Item from './Item'
+import { RootStackProps } from '@/navigator/index'
+import HeaderRightBtn from './HeaderRightBtn'
+import Touchable from '@/components/Touchable'
 
 const mapStateToProps = ({category}: RootState) => {
     return {
+        isEdit: category.isEdit,
         myCategorys: category.myCategorys,
         categorys: category.categorys
     }
@@ -19,21 +22,108 @@ const connector = connect(mapStateToProps)
 
 type ModelState = ConnectedProps<typeof connector>
 
-interface IProps extends ModelState {}
+interface IProps extends ModelState {
+    navigation: RootStackProps
+}
 interface IState {
     myCategorys: ICategory[]
 }
 
-const itemWrapperWidth = viewportWidth - 10
-const itemWidth = itemWrapperWidth / 4 - 8
+// 我的分类默认项，不能删除
+const fixedItem = [0,1]
 
 class Category extends React.Component<IProps, IState> {
     state = {
         myCategorys: this.props.myCategorys
     }
+    constructor(props: IProps) {
+        super(props)
+        props.navigation.setOptions({
+            headerRight: () => <HeaderRightBtn toggleEdit={this.toggleEdit} />
+        })
+    }
+    componentWillUnmount() {
+        const {dispatch} = this.props
+        // 初始化状态
+        dispatch({
+            type: 'category/setState',
+            payload: {
+                isEdit: false
+            }
+        })
+    }
+    // 切换编辑状态，保存数据
+    toggleEdit = () => {
+        const {dispatch} = this.props
+        const {myCategorys} = this.state
+        dispatch({
+            type: 'category/toggle',
+            payload: {
+                myCategorys,
+            }
+        })
+    }
+    // 长按进入编辑状态
+    onLongPress = () => {
+        const {dispatch} = this.props
+        dispatch({
+            type: 'category/setState',
+            payload: {
+                isEdit: true
+            }
+        })
+    }
+    // 增加、删除我的分类
+    onPress = (cate: ICategory, index: number, isSelected: boolean) => {
+        const {isEdit} = this.props
+        const {myCategorys} = this.state
+        const disabled = isSelected && fixedItem.indexOf(index) > -1
+        if(disabled) return
+        if(isEdit) {
+            if(!isSelected) {
+                this.setState({
+                    myCategorys: myCategorys.concat(cate)
+                })
+            }else {
+                this.setState({
+                    myCategorys: myCategorys.filter(item => item.id !== cate.id)
+                })
+            }
+        }
+    }
+    // 我的分类
     renderItem = (cate: ICategory, index: number) => {
+        const {isEdit} = this.props
+        const disabled = fixedItem.indexOf(index) > -1
         return (
-            <Item item={cate}></Item>
+            <Touchable
+                key={cate.id}
+                onPress={() => this.onPress(cate, index, true)}
+            >
+                <Item
+                    disabled={disabled}
+                    item={cate}
+                    isEdit={isEdit}
+                    isSelected
+                ></Item>
+            </Touchable>
+        )
+    }
+    // 其他分类
+    renderUnselectedItem = (cate: ICategory, index: number) => {
+        const {isEdit} = this.props
+        return (
+            <Touchable
+                key={cate.id}
+                onLongPress={this.onLongPress}
+                onPress={() => this.onPress(cate, index, false)}
+            >
+                <Item
+                    item={cate}
+                    isEdit={isEdit}
+                    isSelected={false}
+                ></Item>
+            </Touchable>
         )
     }
     render() {
@@ -43,22 +133,21 @@ class Category extends React.Component<IProps, IState> {
         const classifyGroup = _.groupBy(categorys, item => item.classify)
         return (
             <ScrollView style={styles.container}>
-                <Text style={styles.myTypeText}>我的分类</Text>
+                <Text style={styles.TypeText}>我的分类</Text>
                 <View style={styles.sortWrap}>
                     {myCategorys.map(this.renderItem)}
                 </View>
-                <View>
-                    {Object.keys(classifyGroup).map(key => {
-                        return (
-                            <View key={key}>
-                                <Text style={styles.myTypeText}>{key}</Text>
-                                <View style={styles.sortWrap}>
-                                    {classifyGroup[key].map(this.renderItem)}
-                                </View>
+                {Object.keys(classifyGroup).map(key => {
+                    return (
+                        <View key={key}>
+                            <Text style={styles.TypeText}>{key}</Text>
+                            <View style={styles.sortWrap}>
+                                {/* 过滤掉已经选中的项 */}
+                                {classifyGroup[key].filter(item => myCategorys.every(selectedItem => (selectedItem.id !== item.id))).map(this.renderUnselectedItem)}
                             </View>
-                        )
-                    })}
-                </View>
+                        </View>
+                    )
+                })}
             </ScrollView>
         )
     }
@@ -68,73 +157,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f3f6f6',
-  },
-  contentContainer: {
     padding: 15,
   },
   sortWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    // marginHorizontal: -4,
-    padding: 5
   },
-  item: {
-    width: itemWidth,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 3,
-    margin: 4,
-  },
-  disabledItem: {
-    backgroundColor: '#e0e0e0',
-  },
-  disabledItemText: {
-    color: '#cccccc',
-  },
-  typeNameText: {
+  TypeText: {
+    marginBottom: 8,
+    marginTop: 8,
     fontSize: 16,
-    marginBottom: 8,
-    marginTop: 14,
-  },
-  addView: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    height: 16,
-    width: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f86442',
-    borderRadius: 8,
-  },
-  addText: {
-    // marginLeft: 1,
-    lineHeight: 15,
-    color: '#fff',
-  },
-  deleteView: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    height: 16,
-    width: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#cccccc',
-    borderRadius: 8,
-  },
-
-  deleteText: {
-    // marginLeft: 1,
-    lineHeight: 15,
-    color: '#fff',
-  },
-  myTypeText: {
-    marginBottom: 8,
-    marginTop: 14,
-    fontSize: 18,
   },
   tips: {
     color: '#999999',

@@ -1838,14 +1838,9 @@ export default models
 
 ```tsx
 // pages/Category/index.tsx
-import { RootState } from '@/models/index'
-import React from 'react'
-import { ScrollView, Text, View, StyleSheet } from 'react-native'
-import { connect, ConnectedProps } from 'react-redux'
-import _ from 'lodash'
+...
 
 import {ICategory} from '@/models/category'
-import { viewportWidth } from '@/utils/index'
 import Item from './Item'
 
 const mapStateToProps = ({category}: RootState) => {
@@ -1863,9 +1858,6 @@ interface IProps extends ModelState {}
 interface IState {
     myCategorys: ICategory[]
 }
-
-const itemWrapperWidth = viewportWidth - 10
-const itemWidth = itemWrapperWidth / 4 - 8
 
 class Category extends React.Component<IProps, IState> {
     state = {
@@ -1905,39 +1897,289 @@ class Category extends React.Component<IProps, IState> {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f3f6f6',
-  },
-  sortWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    // marginHorizontal: -4,
-    padding: 5
-  },
-  item: {
-    width: itemWidth,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 3,
-    margin: 4,
-  },
-  typeNameText: {
-    fontSize: 16,
-    marginBottom: 8,
-    marginTop: 14,
-  },
-  myTypeText: {
-    marginBottom: 8,
-    marginTop: 14,
-    fontSize: 18,
-  },
+	...
 });
 
 export default connector(Category)
 ```
 
 #### 切换编辑状态
+
+给标题栏添加按钮的两种方式：
+
+1. 在navigator中声明页面的地方增加options的属性headerRight
+
+   ```tsx
+   <Stack.Screen
+       options={{
+           headerTitle: "分类",
+           headerRight: () => <HeaderRightBtn />
+       }}
+       name="Category"
+       component={Category} 
+   />
+   ```
+
+2. 在页面中取出navigation使用setOptions增加headerRight属性
+
+项目使用方式2，使用库`yarn add react-navigation-header-buttons`的组件
+
+dva新增当前状态，根据状态修改文字
+
+```tsx
+import { RootState } from '@/models/index'
+import React from 'react'
+import {HeaderButtons, Item} from 'react-navigation-header-buttons'
+import { connect, ConnectedProps } from 'react-redux'
+
+const mapStateToProps = ({category}: RootState) => {
+    return {
+        isEdit: category.isEdit
+    }
+}
+
+const connector = connect(mapStateToProps)
+
+type ModelState = ConnectedProps<typeof connector>
+
+interface IProps extends ModelState {
+    toggleEdit: () => void
+}
+
+class HeaderRightBtn extends React.PureComponent<IProps> {
+    render() {
+        const {toggleEdit, isEdit} = this.props
+        return (
+            <HeaderButtons>
+                <Item title={isEdit ? '完成' : '编辑'} onPress={toggleEdit} />
+            </HeaderButtons>
+        )
+    }
+}
+
+export default connector(HeaderRightBtn)
+```
+
+修改ios返回样式
+
+#### 添加删除类别
+
+长按切换到编辑状态
+
+```tsx
+...
+
+const mapStateToProps = ({category}: RootState) => {
+    return {
+        isEdit: category.isEdit,
+        myCategorys: category.myCategorys,
+        categorys: category.categorys
+    }
+}
+
+const connector = connect(mapStateToProps)
+
+type ModelState = ConnectedProps<typeof connector>
+
+interface IProps extends ModelState {
+    navigation: RootStackProps
+}
+interface IState {
+    myCategorys: ICategory[]
+}
+
+// 我的分类默认项，不能删除
+const fixedItem = [0,1]
+
+class Category extends React.Component<IProps, IState> {
+    state = {
+        myCategorys: this.props.myCategorys
+    }
+    constructor(props: IProps) {
+        super(props)
+        props.navigation.setOptions({
+            headerRight: () => <HeaderRightBtn toggleEdit={this.toggleEdit} />
+        })
+    }
+    componentWillUnmount() {
+        const {dispatch} = this.props
+        // 初始化状态
+        dispatch({
+            type: 'category/setState',
+            payload: {
+                isEdit: false
+            }
+        })
+    }
+    // 切换编辑状态，保存数据
+    toggleEdit = () => {
+        const {dispatch} = this.props
+        const {myCategorys} = this.state
+        dispatch({
+            type: 'category/toggle',
+            payload: {
+                myCategorys,
+            }
+        })
+    }
+    // 长按进入编辑状态
+    onLongPress = () => {
+        const {dispatch} = this.props
+        dispatch({
+            type: 'category/setState',
+            payload: {
+                isEdit: true
+            }
+        })
+    }
+    // 增加、删除我的分类
+    onPress = (cate: ICategory, index: number, isSelected: boolean) => {
+        const {isEdit} = this.props
+        const {myCategorys} = this.state
+        const disabled = isSelected && fixedItem.indexOf(index) > -1
+        if(disabled) return
+        if(isEdit) {
+            if(!isSelected) {
+                this.setState({
+                    myCategorys: myCategorys.concat(cate)
+                })
+            }else {
+                this.setState({
+                    myCategorys: myCategorys.filter(item => item.id !== cate.id)
+                })
+            }
+        }
+    }
+    // 我的分类
+    renderItem = (cate: ICategory, index: number) => {
+        const {isEdit} = this.props
+        const disabled = fixedItem.indexOf(index) > -1
+        return (
+            <Touchable
+                key={cate.id}
+                onPress={() => this.onPress(cate, index, true)}
+            >
+                <Item
+                    disabled={disabled}
+                    item={cate}
+                    isEdit={isEdit}
+                    isSelected
+                ></Item>
+            </Touchable>
+        )
+    }
+    // 其他分类
+    renderUnselectedItem = (cate: ICategory, index: number) => {
+        const {isEdit} = this.props
+        return (
+            <Touchable
+                key={cate.id}
+                onLongPress={this.onLongPress}
+                onPress={() => this.onPress(cate, index, false)}
+            >
+                <Item
+                    item={cate}
+                    isEdit={isEdit}
+                    isSelected={false}
+                ></Item>
+            </Touchable>
+        )
+    }
+    render() {
+        const {categorys} = this.props
+        const {myCategorys} = this.state
+        // groupBy根据回调的返回值进行分组
+        const classifyGroup = _.groupBy(categorys, item => item.classify)
+        return (
+            <ScrollView style={styles.container}>
+                <Text style={styles.TypeText}>我的分类</Text>
+                <View style={styles.sortWrap}>
+                    {myCategorys.map(this.renderItem)}
+                </View>
+                {Object.keys(classifyGroup).map(key => {
+                    return (
+                        <View key={key}>
+                            <Text style={styles.TypeText}>{key}</Text>
+                            <View style={styles.sortWrap}>
+                                {/* 过滤掉已经选中的项 */}
+                                {classifyGroup[key].filter(item => myCategorys.every(selectedItem => (selectedItem.id !== item.id))).map(this.renderUnselectedItem)}
+                            </View>
+                        </View>
+                    )
+                })}
+            </ScrollView>
+        )
+    }
+}
+
+const styles = StyleSheet.create({
+  ...
+});
+
+export default connector(Category)
+```
+
+保存到storage
+
+```tsx
+...
+
+interface CategoryModelState {
+    isEdit: boolean;
+    myCategorys: ICategory[];
+    categorys: ICategory[];
+}
+
+interface CategoryModel extends Model {
+    namespace: 'category';
+    state: CategoryModelState;
+    effects: {
+        loadData: Effect;
+        toggle: Effect;
+    };
+    reducers: {
+        setState: Reducer<CategoryModelState>;
+    };
+    // 订阅数据源根据条件调用不同的 subscription
+    subscriptions: SubscriptionsMapObject;
+}
+
+const initialState = {
+    ...
+}
+
+const categoryModel: CategoryModel = {
+    namespace: 'category',
+    state: initialState,
+    effects: {
+        ...
+        *toggle({payload}, {put, select}) {
+            const category = yield select(({category}: RootState) => category)
+            // 状态切换，保存数据到 dva
+            yield put({
+                type: 'setState',
+                payload: {
+                    isEdit: !category.isEdit,
+                    myCategorys: payload.myCategorys,
+                }
+            })
+            // 保存数据到本地 storage
+            if(category.isEdit) {
+                storage.save({
+                    key: 'myCategorys',
+                    data: payload.myCategorys,
+                })
+            }
+        }
+    },
+    reducers: {
+        ...
+    },
+    subscriptions: {
+        ...
+    }
+}
+
+export default categoryModel
+```
 
