@@ -8,7 +8,7 @@ import { RootStackProps } from '@/navigator/index'
 import Carousel, { itemHeight } from './Carousel'
 import Guess from './Guess'
 import ChannelItem from './ChannelItem'
-import { IChannel } from '@/models/home'
+import { IChannel, IGuess } from '@/models/home'
 import { HomeTabList } from '@/navigator/HomeTabs'
 
 const mapStateToProps = (state: RootState, {route}: {route: RouteProp<HomeTabList, string>}) => {
@@ -53,12 +53,13 @@ class Home extends React.Component<IProps, IState> {
             type: namespace + '/fetchChannel'
         })
     }
-    onPress = (data: IChannel) => {
-        console.log(data);
+    goAlbum = (data: IChannel | IGuess) => {
+        const {navigation} = this.props
+        navigation.navigate('Album', {item: data})
     }
     renderItem = ({item}: ListRenderItemInfo<IChannel>) => {
         return (
-            <ChannelItem onPress={this.onPress} item={item}></ChannelItem>
+            <ChannelItem onPress={this.goAlbum} item={item}></ChannelItem>
         )
     }
     // 轮播图和猜你喜欢模块
@@ -68,7 +69,7 @@ class Home extends React.Component<IProps, IState> {
             <View>
                 <Carousel namespace={namespace} />
                 <View style={styles.guessWrapper}>
-                    <Guess namespace={namespace} />
+                    <Guess goAlbum={this.goAlbum} namespace={namespace} />
                 </View>
             </View>
         )

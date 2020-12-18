@@ -2386,3 +2386,107 @@ const mapStateToProps = (state: RootState, {route}: {route: RouteProp<HomeTabLis
 其他使用到的页面也需要修改
 
 *TODO：请求接口还未新增类别*
+
+### 频道模块 
+
+点击猜你喜欢或首页列表进入
+
+简介和节目两个tab
+
+手势系统
+
+#### 布局
+
+添加路由，跳转
+
+动态修改标题，标题栏透明
+
+获取数据
+
+样式布局
+
+图片模糊效果`yarn add @react-native-community/blur`，ios链接
+
+```tsx
+...
+import {BlurView} from '@react-native-community/blur'
+
+import CoverRight from '@/assets/cover-right.png'
+
+const mapStateToProps = ({album}: RootState) => {
+    return {
+        summary: album.summary,
+        author: album.author,
+    }
+}
+const connector = connect(mapStateToProps)
+type ModelState = ConnectedProps<typeof connector>
+
+interface IProps extends ModelState {
+    // RouteProp：推导route类型
+    route: RouteProp<RootStackParamList, 'Album'>
+}
+
+// useHeaderHeight是hook函数在函数式组件中使用
+const Album: React.FC<IProps> = ({dispatch, route, summary, author}) => {
+    const {id, title, image} = route.params.item
+
+    console.log('author', author);
+    
+
+    // 获取标题栏的高度
+    const headerHeight = useHeaderHeight()
+
+    useEffect(() => {
+        dispatch({
+            type: 'album/fetchAlbum',
+            payload: {
+                id
+            }
+        })
+    }, [dispatch, route.params.item.id]);
+
+    const renderHeader = () => {
+        return (
+        <View style={[styles.header, {paddingTop: headerHeight}]}>
+            {/* 背景 */}
+            {/* BlurView包含的组件都会模糊 */}
+            {/* blurAmount：模糊程度，默认10 */}
+            <BlurView blurType='light' blurAmount={5} style={StyleSheet.absoluteFillObject}>
+                <Image style={styles.background} source={{uri: image}}></Image>
+            </BlurView>
+            <View style={styles.leftView}>
+                <Image style={styles.thumbnail} source={{uri: image}}></Image>
+                <Image style={styles.coverRight} source={CoverRight}></Image>
+            </View>
+            <View style={styles.rightView}>
+                <Text style={styles.title}>{title}</Text>
+                <View style={styles.summary}>
+                    <Text style={styles.summaryText} numberOfLines={1}>{summary}</Text>
+                </View>
+                <View style={styles.author}>
+                    <Image style={styles.avatar} source={{uri: author.avatar}}></Image>
+                    <Text style={styles.name}>{author.name}</Text>
+                </View>
+            </View>
+        </View>
+        )
+    }
+    return (
+        <View>{renderHeader()}</View>
+    )
+}
+
+const styles = StyleSheet.create({
+    ...
+})
+
+export default connector(Album)
+```
+
+#### 标签组件
+
+使用react-native-tab-view库，前面已安装
+
+
+

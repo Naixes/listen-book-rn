@@ -1,12 +1,13 @@
-import { NavigationContainer } from '@react-navigation/native'
+import { NavigationContainer, RouteProp } from '@react-navigation/native'
 import { CardStyleInterpolators, createStackNavigator, HeaderStyleInterpolators, StackNavigationProp } from '@react-navigation/stack'
 import React from 'react'
 
 // Home为标签选择器
 import Home from '@/navigator/BottomTabs'
-import Detail from '@/pages/Detail'
 import { Platform, StatusBar, StyleSheet } from 'react-native'
 import Category from '@/pages/Category'
+import Album from '@/pages/Album'
+import Animated from 'react-native-reanimated'
 
 // 不能使用interface，缺少索引签名
 export type RootStackParamList = {
@@ -15,8 +16,12 @@ export type RootStackParamList = {
         screen?: string;
     };
     Category: undefined;
-    Detail: {
-        id: number
+    Album: {
+        item: {
+            id: string;
+            title: string;
+            image: string;
+        }
     };
 }
 
@@ -30,6 +35,30 @@ let Stack = createStackNavigator<RootStackParamList>()
 //     Navigator,
 //     Screen
 // }
+
+const getAlbumOptions = ({route}: {route: RouteProp<RootStackParamList, 'Album'>}) => {
+    return {
+        headerTitle: route.params.item.title,
+        // 设置透明标题栏
+        headerTransparent: true,
+        headerTitleStyle: {
+            opacity: 0
+        },
+        headerBackground: () => {
+            return (
+                <Animated.View style={styles.headerBackground}></Animated.View>
+            )
+        }
+    }
+}
+
+const styles = StyleSheet.create({
+    headerBackground: {
+        flex: 1,
+        backgroundColor: '#fff',
+        opacity: 0
+    }
+})
 
 class Navigator extends React.Component {
     render() {
@@ -88,9 +117,10 @@ class Navigator extends React.Component {
                         component={Category} 
                     />
                     <Stack.Screen
-                        options={{headerTitle: "详情"}}
-                        name="Detail"
-                        component={Detail} 
+                        // 动态传递 options
+                        options={getAlbumOptions}
+                        name="Album"
+                        component={Album} 
                     />
                 </Stack.Navigator>
             </NavigationContainer>

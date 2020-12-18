@@ -3,7 +3,7 @@ import { FlatList, Image, StyleSheet, Text, View } from 'react-native'
 import {connect, ConnectedProps} from 'react-redux'
 
 import { RootState } from '@/models/index'
-import { IGuess } from '@/models/home'
+import { IChannel, IGuess } from '@/models/home'
 import Touchable from '@/components/Touchable'
 import Icon from '@/assets/iconfont/index'
 
@@ -19,6 +19,7 @@ const connector = connect(mapStateToProps)
 type ModelState = ConnectedProps<typeof connector>
 interface IGuessProps {
   namespace: string;
+  goAlbum: (data: IGuess) => void
 }
 type IProps = ModelState & IGuessProps
 
@@ -32,16 +33,14 @@ class Guess extends React.PureComponent<IProps> {
             type: namespace + '/fetchGuess'
         })
     }
-    onPress = () => {
-      console.log('xxx');
-    }
-    renderItem({item}: {item: IGuess}) {
-        return (
-            <Touchable style={styles.item} onPress={this.onPress}>
-                <Image style={styles.thumbnail} source={{uri: item.image}}></Image>
-                <Text numberOfLines={2} style={styles.title}>{item.title}</Text>
-            </Touchable>
-        )
+    renderItem = ({item}: {item: IGuess}) => {
+      const {goAlbum} = this.props
+      return (
+        <Touchable style={styles.item} onPress={() => goAlbum(item)}>
+          <Image style={styles.thumbnail} source={{uri: item.image}}></Image>
+          <Text numberOfLines={2} style={styles.title}>{item.title}</Text>
+        </Touchable>
+      )
     }
     render() {
       const {guess} = this.props
