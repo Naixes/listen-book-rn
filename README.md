@@ -2395,9 +2395,9 @@ const mapStateToProps = (state: RootState, {route}: {route: RouteProp<HomeTabLis
 
 手势系统
 
-#### 布局
+#### 添加路由，跳转
 
-添加路由，跳转
+#### 头部布局
 
 动态修改标题，标题栏透明
 
@@ -2488,5 +2488,10 @@ export default connector(Album)
 
 使用react-native-tab-view库，前面已安装
 
+获取数据
 
+自定义标签样式
 
+列表滚动效果
+
+> 闪退

@@ -4,7 +4,7 @@ import { Reducer } from "redux";
 
 const ALBUM_URL = '/mock/11/album/list'
 
-interface IProgram {
+export interface IProgram {
     id: string;
     title: string;
     playCount: number;
