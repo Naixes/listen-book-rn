@@ -8,6 +8,7 @@ import {BlurView} from '@react-native-community/blur'
 import { RootState } from '@/models/index'
 import { RootStackParamList } from '@/navigator/index'
 import CoverRight from '@/assets/cover-right.png'
+import DefaultAvatar from '@/assets/default_avatar.png'
 import Tab from './Tab'
 
 const mapStateToProps = ({album}: RootState) => {
@@ -46,8 +47,9 @@ const Album: React.FC<IProps> = ({dispatch, route, summary, author}) => {
             {/* 背景 */}
             {/* BlurView包含的组件都会模糊 */}
             {/* blurAmount：模糊程度，默认10 */}
-            <BlurView blurType='light' blurAmount={5} style={StyleSheet.absoluteFillObject}>
-                <Image style={styles.background} source={{uri: image}}></Image>
+            <Image style={styles.background} source={{uri: image}}></Image>
+            {/* BlurView不能有子元素 */}
+            <BlurView blurType='light' blurAmount={15} style={StyleSheet.absoluteFillObject}>
             </BlurView>
             <View style={styles.leftView}>
                 <Image style={styles.thumbnail} source={{uri: image}}></Image>
@@ -59,7 +61,7 @@ const Album: React.FC<IProps> = ({dispatch, route, summary, author}) => {
                     <Text style={styles.summaryText} numberOfLines={1}>{summary}</Text>
                 </View>
                 <View style={styles.author}>
-                    <Image style={styles.avatar} source={{uri: author.avatar}}></Image>
+                    <Image style={styles.avatar} source={author.avatar ? {uri: author.avatar} : DefaultAvatar}></Image>
                     <Text style={styles.name}>{author.name}</Text>
                 </View>
             </View>

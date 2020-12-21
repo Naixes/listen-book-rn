@@ -2405,7 +2405,7 @@ const mapStateToProps = (state: RootState, {route}: {route: RouteProp<HomeTabLis
 
 样式布局
 
-图片模糊效果`yarn add @react-native-community/blur`，ios链接
+图片模糊效果`yarn add @react-native-community/blur`，ios链接，android某些版本可能出现闪退
 
 ```tsx
 ...
@@ -2494,4 +2494,3 @@ export default connector(Album)
 
 列表滚动效果
 
-> 闪退
