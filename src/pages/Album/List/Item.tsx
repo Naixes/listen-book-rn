@@ -30,7 +30,7 @@ class Item extends React.Component<IProps> {
                             <Icon name='icon-V' color="#939393"></Icon>
                             <Text style={styles.iconText}>{data.playCount}</Text>
                         </View>
-                        <View>
+                        <View style={styles.iconView}>
                             <Icon name='icon-time' color="#939393"></Icon>
                             <Text style={styles.iconText}>{data.duration}</Text>
                         </View>

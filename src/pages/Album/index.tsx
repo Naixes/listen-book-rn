@@ -49,7 +49,7 @@ const Album: React.FC<IProps> = ({dispatch, route, summary, author}) => {
             {/* blurAmount：模糊程度，默认10 */}
             <Image style={styles.background} source={{uri: image}}></Image>
             {/* BlurView不能有子元素 */}
-            <BlurView blurType='light' blurAmount={15} style={StyleSheet.absoluteFillObject}>
+            <BlurView blurType='light' blurAmount={10} style={StyleSheet.absoluteFillObject}>
             </BlurView>
             <View style={styles.leftView}>
                 <Image style={styles.thumbnail} source={{uri: image}}></Image>
