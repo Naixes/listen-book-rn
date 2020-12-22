@@ -8,6 +8,9 @@ import { Platform, StatusBar, StyleSheet } from 'react-native'
 import Category from '@/pages/Category'
 import Album from '@/pages/Album'
 import Animated from 'react-native-reanimated'
+import Detail from '@/pages/Album/Detail'
+
+// RootStackScreen
 
 // 不能使用interface，缺少索引签名
 export type RootStackParamList = {
@@ -60,69 +63,103 @@ const styles = StyleSheet.create({
     }
 })
 
+const RootStackScreen = () => {
+    return (
+        <Stack.Navigator
+            // 标题模式
+            // float(ios默认，共用一个标题栏)/screen(android默认)
+            headerMode="screen"
+            screenOptions={{
+                // 让ios返回样式与安卓统一
+                headerBackTitleVisible: false,
+                headerTintColor: '#333',
+
+                headerTitleAlign: "center",
+                // 标题动画
+                headerStyleInterpolator: HeaderStyleInterpolators.forUIKit,
+                // 内容动画
+                cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+                // 打开手势系统，安卓默认关闭
+                gestureEnabled: true,
+                // 设置手势方向
+                gestureDirection: "horizontal",
+                // 设置状态栏高度，防止渲染时有抖动
+                // react-native0.6，1.5时StatusBar.currentHeight为undefined；0.62版本返回null，所以增加判断
+                // ...Platform.select({
+                //     android: {
+                //         headerStatusBarHeight: StatusBar.currentHeight,
+                //     }
+                // }),
+                // 统一标题样式
+                headerStyle: {
+                    ...Platform.select({
+                        android: {
+                            // 阴影
+                            elevation: 0,
+                            borderBottomWidth: StyleSheet.hairlineWidth,
+                        },
+                        ios: {}
+                    })
+                }
+            }}
+        >
+            {/* options和screenOptions内容一样，options优先级更高 */}
+            {/* 嵌套标签选择器，标题动态显示 */}
+            <Stack.Screen
+                options={{headerTitle: "首页"}}
+                name="BottomTab"
+                component={Home} 
+            />
+            <Stack.Screen
+                options={{
+                    headerTitle: "分类",
+                }}
+                name="Category"
+                component={Category} 
+            />
+            <Stack.Screen
+                // 动态传递 options
+                options={getAlbumOptions}
+                name="Album"
+                component={Album} 
+            />
+        </Stack.Navigator>
+    )
+}
+
+// ModelStackScreen
+
+export type ModelStackParamList = {
+    Root: undefined;
+    Detail: undefined;
+}
+
+export type ModelStackProps = StackNavigationProp<ModelStackParamList>
+
+const ModelStack = createStackNavigator<ModelStackParamList>()
+
+const ModelStackScreen = () => {
+    return (
+        // 设置全屏模式
+        <ModelStack.Navigator mode='modal' headerMode='screen'>
+            <ModelStack.Screen
+                name='Root'
+                component={RootStackScreen}
+                options={{
+                    // 隐藏标题栏
+                    headerShown: false
+                }}
+            ></ModelStack.Screen>
+            <ModelStack.Screen name='Detail' component={Detail}></ModelStack.Screen>
+        </ModelStack.Navigator>
+    )
+}
+
 class Navigator extends React.Component {
     render() {
         return (
             <NavigationContainer>
-                <Stack.Navigator
-                    // 标题模式
-                    // float(ios默认，共用一个标题栏)/screen(android默认)
-                    headerMode="screen"
-                    screenOptions={{
-                        // 让ios返回样式与安卓统一
-                        headerBackTitleVisible: false,
-                        headerTintColor: '#333',
-
-                        headerTitleAlign: "center",
-                        // 标题动画
-                        headerStyleInterpolator: HeaderStyleInterpolators.forUIKit,
-                        // 内容动画
-                        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-                        // 打开手势系统，安卓默认关闭
-                        gestureEnabled: true,
-                        // 设置手势方向
-                        gestureDirection: "horizontal",
-                        // 设置状态栏高度，防止渲染时有抖动
-                        // react-native0.6，1.5时StatusBar.currentHeight为undefined；0.62版本返回null，所以增加判断
-                        // ...Platform.select({
-                        //     android: {
-                        //         headerStatusBarHeight: StatusBar.currentHeight,
-                        //     }
-                        // }),
-                        // 统一标题样式
-                        headerStyle: {
-                            ...Platform.select({
-                                android: {
-                                    // 阴影
-                                    elevation: 0,
-                                    borderBottomWidth: StyleSheet.hairlineWidth,
-                                },
-                                ios: {}
-                            })
-                        }
-                    }}
-                >
-                    {/* options和screenOptions内容一样，options优先级更高 */}
-                    {/* 嵌套标签选择器，标题动态显示 */}
-                    <Stack.Screen
-                        options={{headerTitle: "首页"}}
-                        name="BottomTab"
-                        component={Home} 
-                    />
-                    <Stack.Screen
-                        options={{
-                            headerTitle: "分类",
-                        }}
-                        name="Category"
-                        component={Category} 
-                    />
-                    <Stack.Screen
-                        // 动态传递 options
-                        options={getAlbumOptions}
-                        name="Album"
-                        component={Album} 
-                    />
-                </Stack.Navigator>
+                <ModelStackScreen></ModelStackScreen>
             </NavigationContainer>
         )
     }

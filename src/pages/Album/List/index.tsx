@@ -13,19 +13,22 @@ const mapStateTpProps = ({album}: RootState) => {
 const connector = connect(mapStateTpProps)
 type ModelState = ConnectedProps<typeof connector>
 
-interface IProps extends ModelState {}
+interface IProps extends ModelState {
+    onItemPress: (item: IProgram, index: number) => void
+}
 
 class List extends React.Component<IProps> {
     keyExtractor = (item: IProgram) => item.id
-    onPress = (item: IProgram) => {
-        
+    onPress = (item: IProgram, index: number) => {
+        const {onItemPress} = this.props
+        onItemPress(item, index)
     }
     renderItem = ({item, index}: ListRenderItemInfo<IProgram>) => {
         return (
             <Item
                 data={item}
                 index={index}
-                onPress={this.onPress}
+                onPress={() => this.onPress(item, index)}
             ></Item>
         )
     }

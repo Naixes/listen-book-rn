@@ -2452,9 +2452,9 @@ const Album: React.FC<IProps> = ({dispatch, route, summary, author}) => {
             {/* 背景 */}
             {/* BlurView包含的组件都会模糊 */}
             {/* blurAmount：模糊程度，默认10 */}
-            <BlurView blurType='light' blurAmount={5} style={StyleSheet.absoluteFillObject}>
-                <Image style={styles.background} source={{uri: image}}></Image>
-            </BlurView>
+            <Image style={styles.background} source={{uri: image}}></Image>
+            {/* BlurView不能有子元素 */}
+            <BlurView blurType='light' blurAmount={5} style={StyleSheet.absoluteFillObject} />
             <View style={styles.leftView}>
                 <Image style={styles.thumbnail} source={{uri: image}}></Image>
                 <Image style={styles.coverRight} source={CoverRight}></Image>
@@ -2492,5 +2492,289 @@ export default connector(Album)
 
 自定义标签样式
 
-列表滚动效果
+```tsx
+import React from 'react'
+import { Platform, StyleSheet, Text, View } from 'react-native'
+import {SceneRendererProps, TabBar, TabView} from 'react-native-tab-view'
+import Introduction from './Introduction'
+import List from './List'
 
+interface IRoute {
+    key: string;
+    title: string;
+}
+
+interface IState {
+    routes: IRoute[];
+    index: number;
+}
+
+interface IProps {}
+
+class Tab extends React.Component<IProps, IState> {
+    state = {
+        // 默认下标 1
+        index: 1,
+        routes: [
+            { key: 'introduction', title: '简介' },
+            { key: 'albums', title: '节目' },
+        ],
+    }
+    onIndexChange = (index: number) => {
+        this.setState({
+            index,
+        })
+    }
+    renderScene = ({route}: {route: IRoute}) => {
+        switch (route.key) {
+            case 'introduction':
+                return <Introduction />
+            case 'albums':
+                return <List />
+            default:
+                break;
+        }
+    }
+    renderTabBar = (props: SceneRendererProps & {navigationState: IState}) => {
+        return (
+            <TabBar
+                {...props}
+                // 启动滚动，自定义宽度，默认平分
+                scrollEnabled
+                tabStyle={styles.tabStyle}
+                labelStyle={styles.label}
+                style={styles.tabbar}
+                // 指示器样式
+                indicatorStyle={styles.indicator}
+            ></TabBar>
+        )
+    }
+    render() {
+        // const {routes, index} = this.state
+        return (
+            <TabView
+                navigationState={this.state}
+                onIndexChange={this.onIndexChange}
+                // 渲染每一个标签
+                renderScene={this.renderScene}
+                // 自定义tabBar
+                renderTabBar={this.renderTabBar}
+            >
+            </TabView>
+        )
+    }
+}
+
+const styles = {
+    ...
+}
+
+export default Tab
+```
+
+#### 列表滚动效果
+
+##### 动画
+
+`react-native`的`Animated`
+
+1. 设置动画值
+2. 声明动画
+3. 执行动画，需要使用动画组件`<Animated.View><Animated.Text><Animated.Image><Animated.FlatList><Animated.SectionList>`
+
+插值动画修改颜色透明度等
+
+```tsx
+import { Image, StyleSheet, Text, View, Animated } from 'react-native'
+...
+const Album: React.FC<IProps> = ({dispatch, route, summary, author}) => {
+    const {id, title, image} = route.params.item
+
+    // 1. 声明动画值
+    // const translateY = new Animated.Value(0)
+    const [translateY] = useState(new Animated.Value(0));
+    // 2. 声明动画
+    Animated.timing(translateY, {
+        toValue: -170,
+        duration: 3000,
+        useNativeDriver: true,
+    }).start()
+    ...
+    const renderHeader = () => {...}
+    return (
+        // 4. 使用动画值
+        <Animated.View style={[styles.container,
+            {
+                opacity: translateY.interpolate({
+                  inputRange: [-170, 0],
+                  outputRange: [1, 0],
+                }),
+                transform: [{translateY}]
+            }
+        ]}>
+            {renderHeader()}
+            <Tab></Tab>
+        </Animated.View>
+    )
+}
+
+export default connector(Album)
+```
+
+##### 手势响应系统
+
+库`react-native-gesture-handler`（导航器已经依赖不用重新安装），分为两种手势，持续手势和不持续手势（长按，点击等）
+
+监听拖动手势组件：
+
+`<PanGestureHandler onGestureEvent={} />`，支持动画监听库
+
+监听拖动
+
+监听手势状态
+
+增加限制
+
+```tsx
+...
+// 手势库
+import { PanGestureHandler, PanGestureHandlerGestureEvent, PanGestureHandlerStateChangeEvent, State } from 'react-native-gesture-handler'
+// 这个库旨在解决React Native在动画方面的性能问题，让我们能够创建运行在UI线程上的顺滑动画和流畅交互
+// import Animated, { Easing } from 'react-native-reanimated'
+...
+
+interface IProps extends ModelState {
+    // RouteProp：推导route类型
+    route: RouteProp<RootStackParamList, 'Album'>,
+    headerHeight: number;
+}
+
+const USE_NATIVE_DRIVER = true
+const HEADER_HEIGHT = 260
+
+// useHeaderHeight是hook函数在函数式组件中使用
+class Album extends React.Component<IProps> {
+    RANGE = [-(HEADER_HEIGHT - this.props.headerHeight), 0]
+    // 1. 声明动画值
+    translationY = new Animated.Value(0)
+    translationYOffset = new Animated.Value(0)
+    translateY = Animated.add(this.translationY, this.translationYOffset)
+    translationYValue = 0
+    // // 2. 声明动画
+    // Animated.timing(this.translateY, {
+    //     toValue: -170,
+    //     duration: 3000,
+    //     // 启动原生动画驱动
+    //     useNativeDriver: USE_NATIVE_DRIVER
+    // }).start()
+
+    componentDidMount() {
+        const {dispatch, route} = this.props
+        const {id} = route.params.item
+        dispatch({
+            type: 'album/fetchAlbum',
+            payload: {
+                id
+            }
+        })
+    }
+
+    renderHeader = () => {...}
+
+    // 监听拖动
+    // onGestureEvent = (event: PanGestureHandlerGestureEvent) => {
+    //     console.log(event.nativeEvent.translationY);
+    // }
+    onGestureEvent = Animated.event([{
+        // 绑定 translationY
+        nativeEvent: {translationY: this.translationY}
+    }], 
+    // 配置
+    { useNativeDriver: USE_NATIVE_DRIVER })
+
+    // 监听手势状态
+    onHandlerStateChange = ({nativeEvent}: PanGestureHandlerStateChangeEvent) => {
+        // 防止每次拖动都回到初始高度
+        // 上一次状态是活动的
+        if(nativeEvent.oldState === State.ACTIVE) {
+            let {translationY} = nativeEvent
+            // 每个Animated.Value中都有两个值，一个value一个offset
+            // 将 translationYOffset 的 value 值设置到 offset 上清空value值
+            // offset = value
+            this.translationYOffset.extractOffset()
+            // 重新设置 value
+            // value = translationY
+            this.translationYOffset.setValue(translationY)
+            // 将 offset 和 value 相加重新设置 value
+            // value = value + offset
+            this.translationYOffset.flattenOffset()
+            this.translationY.setValue(0)
+            this.translationYValue += translationY
+            // 判断是否超出范围
+            // spring：弹簧效果，inputRange、outputRange也要对应修改
+            if(this.translationYValue < this.RANGE[0]) {
+                this.translationYValue = this.RANGE[0]
+                Animated.timing(this.translationYOffset, {
+                    toValue: this.RANGE[0],
+                    duration: 1000,
+                    useNativeDriver: USE_NATIVE_DRIVER
+                }).start()
+            }else if(this.translationYValue > this.RANGE[1]) {
+                this.translationYValue = this.RANGE[1]
+                Animated.timing(this.translationYOffset, {
+                    toValue: this.RANGE[1],
+                    duration: 1000,
+                    useNativeDriver: USE_NATIVE_DRIVER
+                }).start()
+            }
+        }
+    }
+
+    render() {
+        console.log('RANGE', this.RANGE);
+        
+        return (
+            // onHandlerStateChange手势状态改变时调用
+            <PanGestureHandler onHandlerStateChange={this.onHandlerStateChange} onGestureEvent={this.onGestureEvent}>
+                {/* 4. 使用动画值 */}
+                <Animated.View style={[styles.container,
+                    {
+                        // opacity: translateY.interpolate({
+                        // inputRange: [-170, 0],
+                        // outputRange: [1, 0],
+                        // }),
+                        transform: [{translateY: this.translateY.interpolate({
+                            inputRange: this.RANGE,
+                            outputRange: this.RANGE,
+                            // 超出范围不做处理
+                            extrapolate: 'clamp',
+                        })}]
+                    }
+                ]}>
+                    {this.renderHeader()}
+                    {/* 设置列表高度 */}
+                    <View style={{height: viewportHeight - this.props.headerHeight}}>
+                        <Tab></Tab>
+                    </View>
+                </Animated.View>
+            </PanGestureHandler>
+        )
+    }
+
+}
+...
+
+const Wrapper = function(props: IProps) {
+    // 获取标题栏的高度
+    const headerHeight = useHeaderHeight();
+    return <Album {...props} headerHeight={headerHeight} />;
+  };
+
+export default connector(Wrapper)
+```
+
+#### 频道详情
+
+##### 全屏模式
+
+相当于同时渲染多个页面

@@ -1,3 +1,4 @@
+import { IProgram } from '@/models/album'
 import React from 'react'
 import { Platform, StyleSheet, Text, View } from 'react-native'
 import {SceneRendererProps, TabBar, TabView} from 'react-native-tab-view'
@@ -14,7 +15,9 @@ interface IState {
     index: number;
 }
 
-interface IProps {}
+interface IProps {
+    onItemPress: (item: IProgram, index: number) => void;
+}
 
 class Tab extends React.Component<IProps, IState> {
     state = {
@@ -31,11 +34,12 @@ class Tab extends React.Component<IProps, IState> {
         })
     }
     renderScene = ({route}: {route: IRoute}) => {
+        const {onItemPress} = this.props
         switch (route.key) {
             case 'introduction':
                 return <Introduction />
             case 'albums':
-                return <List />
+                return <List onItemPress={onItemPress} />
             default:
                 break;
         }
