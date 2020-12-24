@@ -2777,4 +2777,196 @@ export default connector(Wrapper)
 
 ##### 全屏模式
 
-相当于同时渲染多个页面
+相当于同时渲染多个页面，由于全屏模式是添加在导航器上的，现在只有频道页面需要，所以可以在最外层再添加一层堆栈式导航器与详情页面并列
+
+```tsx
+// navigator/index.tsx
+...
+// RootStackScreen
+...
+const RootStackScreen = () => {
+    return (...)
+}
+
+// ModelStackScreen
+export type ModelStackParamList = {
+    Root: undefined;
+    Detail: undefined;
+}
+export type ModelStackProps = StackNavigationProp<ModelStackParamList>
+const ModelStack = createStackNavigator<ModelStackParamList>()
+const ModelStackScreen = () => {
+    return (
+        // 设置全屏模式
+        <ModelStack.Navigator mode='modal' headerMode='screen'>
+            <ModelStack.Screen
+                name='Root'
+                component={RootStackScreen}
+                options={{
+                    // 隐藏标题栏
+                    headerShown: false
+                }}
+            ></ModelStack.Screen>
+            <ModelStack.Screen name='Detail' component={Detail}></ModelStack.Screen>
+        </ModelStack.Navigator>
+    )
+}
+
+class Navigator extends React.Component {
+    render() {
+        return (
+            <NavigationContainer>
+                <ModelStackScreen></ModelStackScreen>
+            </NavigationContainer>
+        )
+    }
+}
+
+export default Navigator
+```
+
+##### 播放音频
+
+`yarn add react-native-sound`
+
+```ts
+// config/sound.ts
+import Sound from 'react-native-sound'
+
+Sound.setCategory('Playback')
+
+let sound: Sound
+
+const initPlay = (filePath: string) => {
+    return new Promise((resolve, reject) => {
+        sound = new Sound(filePath, '', error => {
+            if(error) {
+                console.log('failed to load sound', error);
+                reject(error)
+            }else {
+                resolve(sound)
+            }
+        })
+    })
+}
+
+const play = () => {
+    return new Promise((resolve, reject) => {
+        if(sound) {
+            // 播放完成后才返回
+            sound.play((success) => {
+                if(success) {
+                    resolve(sound)
+                }else {
+                    reject()
+                }
+                // 释放资源
+                sound.release()
+            })
+        }else {
+            reject()
+        }
+    })
+}
+
+const pause = () => {
+    return new Promise(resolve => {
+        if(sound) {
+            sound.pause(() => {
+                resolve(sound)
+            })
+        }else {
+            resolve(sound)
+        }
+    })
+}
+
+const getCurrentTime = () => {
+    return new Promise(resolve => {
+        if(sound && sound.isLoaded()) {
+            sound.getCurrentTime(resolve)
+        }else {
+            resolve(0)
+        }
+    })
+}
+
+const getDuration = () => {
+    if(sound) {
+        return sound.getCurrentTime()
+    }
+    return 0
+}
+
+export {
+    initPlay,
+    play,
+    pause,
+    getCurrentTime,
+    getDuration,
+}
+
+// models/player.ts
+...
+
+const initialState: PlayerState = {
+    id: '',
+    soundUrl: '',
+    playState: '',
+}
+
+const playerModel: PlayerModel = {
+    namespace: 'player',
+    state: initialState,
+    reducers: {
+        setState(state, {payload}) {
+            return {
+                ...state,
+                ...payload,
+            }
+        }
+    },
+    effects: {
+        *fetchPlayer({payload}, {call, put}) {
+            const {data} = yield call(axios.get, PLAYER_URL, {params: {id: payload.id}})
+            yield put({
+                type: 'setState',
+                payload: {
+                    id: data.id,
+                    soundUrl: data.soundUrl
+                }
+            })
+            // 初始化音频
+            yield call(initPlay, data.soundUrl)
+            // 播放音频
+            yield put({
+                type: 'play'
+            })
+        },
+        // 播放音频
+        *play({payload}, {call, put}) {
+            yield put({
+                type: 'setState',
+                payload: {
+                    playState: 'playing',
+                }
+            })
+            yield call(play)
+            yield put({
+                type: 'setState',
+                payload: {
+                    playState: 'played',
+                }
+            })
+        }
+    }
+}
+
+export default playerModel
+```
+
+播放，暂停
+
+显示进度条：监听播放进度
+
+安装库`yarn add react-native-slider-x`

@@ -1,5 +1,5 @@
 import { NavigationContainer, RouteProp } from '@react-navigation/native'
-import { CardStyleInterpolators, createStackNavigator, HeaderStyleInterpolators, StackNavigationProp } from '@react-navigation/stack'
+import { CardStyleInterpolators, createStackNavigator, HeaderStyleInterpolators, StackNavigationProp, TransitionPresets } from '@react-navigation/stack'
 import React from 'react'
 
 // Home为标签选择器
@@ -8,7 +8,8 @@ import { Platform, StatusBar, StyleSheet } from 'react-native'
 import Category from '@/pages/Category'
 import Album from '@/pages/Album'
 import Animated from 'react-native-reanimated'
-import Detail from '@/pages/Album/Detail'
+import Detail from '@/pages/Detail'
+import Icon from '@/assets/iconfont/index'
 
 // RootStackScreen
 
@@ -54,14 +55,6 @@ const getAlbumOptions = ({route}: {route: RouteProp<RootStackParamList, 'Album'>
         }
     }
 }
-
-const styles = StyleSheet.create({
-    headerBackground: {
-        flex: 1,
-        backgroundColor: '#fff',
-        opacity: 0
-    }
-})
 
 const RootStackScreen = () => {
     return (
@@ -111,9 +104,7 @@ const RootStackScreen = () => {
                 component={Home} 
             />
             <Stack.Screen
-                options={{
-                    headerTitle: "分类",
-                }}
+                options={{headerTitle: "分类"}}
                 name="Category"
                 component={Category} 
             />
@@ -131,7 +122,9 @@ const RootStackScreen = () => {
 
 export type ModelStackParamList = {
     Root: undefined;
-    Detail: undefined;
+    Detail: {
+        id: string;
+    };
 }
 
 export type ModelStackProps = StackNavigationProp<ModelStackParamList>
@@ -141,7 +134,19 @@ const ModelStack = createStackNavigator<ModelStackParamList>()
 const ModelStackScreen = () => {
     return (
         // 设置全屏模式
-        <ModelStack.Navigator mode='modal' headerMode='screen'>
+        <ModelStack.Navigator
+            mode='modal'
+            headerMode='screen'
+            screenOptions={{
+                headerTitleAlign: 'center',
+                // 开启手势
+                gestureEnabled: true,
+                // 动画效果
+                ...TransitionPresets.SlideFromRightIOS,
+                // 隐藏 ios 返回标题
+                headerBackTitleVisible: false,
+            }}
+        >
             <ModelStack.Screen
                 name='Root'
                 component={RootStackScreen}
@@ -150,7 +155,24 @@ const ModelStackScreen = () => {
                     headerShown: false
                 }}
             ></ModelStack.Screen>
-            <ModelStack.Screen name='Detail' component={Detail}></ModelStack.Screen>
+            <ModelStack.Screen
+                name='Detail'
+                component={Detail}
+                options={{
+                    headerTintColor: '#fff',
+                    headerTransparent: true,
+                    headerTitle: '',
+                    cardStyle: {backgroundColor: '#807c66'},
+                    headerBackImage: ({tintColor}) => (
+                        <Icon
+                            name="icon-down"
+                            size={25}
+                            color={tintColor}
+                            style={styles.headerBackImage}
+                        ></Icon>
+                    )
+                }}
+            ></ModelStack.Screen>
         </ModelStack.Navigator>
     )
 }
@@ -164,5 +186,16 @@ class Navigator extends React.Component {
         )
     }
 }
+
+const styles = StyleSheet.create({
+    headerBackground: {
+        flex: 1,
+        backgroundColor: '#fff',
+        opacity: 0
+    },
+    headerBackImage: {
+        marginHorizontal: Platform.OS === 'android' ? 0 : 8
+    }
+})
 
 export default Navigator

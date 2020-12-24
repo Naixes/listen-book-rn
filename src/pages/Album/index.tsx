@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Image, StyleSheet, Text, View, Animated } from 'react-native'
 import {useHeaderHeight} from '@react-navigation/stack'
 import { connect, ConnectedProps } from 'react-redux'
@@ -145,7 +145,7 @@ class Album extends React.Component<IProps> {
     onItemPress = (item: IProgram, index: number) => {
         // 跳转详情
         const {navigation} = this.props
-        navigation.navigate('Detail')
+        navigation.navigate('Detail', {id: item.id})
     }
 
     render() {

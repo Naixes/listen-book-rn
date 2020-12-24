@@ -3,6 +3,14 @@ import {Dimensions} from 'react-native'
 
 const {width: viewportWidth, height: viewportHeight} = Dimensions.get('window')
 
+// 格式化时间
+function formatTime(seconds: number) {
+    const m = parseInt((seconds % (60 * 60)) / 60 + '', 10);
+    const s = parseInt((seconds % 60) + '', 10);
+  
+    return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+  }
+
 // 根据百分比和屏幕尺寸获取宽度
 function widFromPer(percentage: number) {
     const value = viewportWidth * percentage / 100
@@ -26,6 +34,7 @@ function getActiveTabName(state: NavigationState) {
 }
 
 export {
+    formatTime,
     viewportWidth,
     viewportHeight,
     widFromPer,
