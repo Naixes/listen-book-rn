@@ -16,6 +16,7 @@ export interface PlayerState {
     prevId: string;
     nextId: string;
     sounds: {id: string, title: string}[];
+    thumbnailUrl: string;
 }
 
 export interface PlayerModel extends Model {
@@ -46,6 +47,7 @@ const initialState: PlayerState = {
     prevId: '',
     nextId: '',
     sounds: [],
+    thumbnailUrl: '',
 }
 
 // 延时函数

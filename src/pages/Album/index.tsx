@@ -145,7 +145,7 @@ class Album extends React.Component<IProps> {
 
     onItemPress = (item: IProgram, index: number) => {
         // 跳转详情
-        const {navigation, dispatch, list} = this.props
+        const {navigation, dispatch, list, route} = this.props
         navigation.navigate('Detail', {id: item.id})
         // 保存上一首和下一首和整个list
         const prevItem = list[index - 1]
@@ -157,6 +157,7 @@ class Album extends React.Component<IProps> {
                 nextItem: nextItem ? nextItem.id : '',
                 sounds: list.map(item => ({id: item.id, title: item.title})),
                 title: item.title,
+                thumbnailUrl: route.params.item.image,
             }
         })
     }

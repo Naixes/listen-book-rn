@@ -3260,3 +3260,4 @@ class Detail extends React.Component<IProps> {
 export default connector(Detail)
 ```
 
+##### 图片背景弹幕
