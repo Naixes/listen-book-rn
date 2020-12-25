@@ -19,6 +19,7 @@ import { IProgram } from '@/models/album'
 
 const mapStateToProps = ({album}: RootState) => {
     return {
+        list: album.list,
         summary: album.summary,
         author: album.author,
     }
@@ -144,8 +145,20 @@ class Album extends React.Component<IProps> {
 
     onItemPress = (item: IProgram, index: number) => {
         // 跳转详情
-        const {navigation} = this.props
+        const {navigation, dispatch, list} = this.props
         navigation.navigate('Detail', {id: item.id})
+        // 保存上一首和下一首和整个list
+        const prevItem = list[index - 1]
+        const nextItem = list[index + 1]
+        dispatch({
+            type: 'player/setState',
+            payload: {
+                prevId: prevItem ? prevItem.id : '',
+                nextItem: nextItem ? nextItem.id : '',
+                sounds: list.map(item => ({id: item.id, title: item.title})),
+                title: item.title,
+            }
+        })
     }
 
     render() {

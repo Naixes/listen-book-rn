@@ -48,6 +48,18 @@ const pause = () => {
     })
 }
 
+const stop = () => {
+    return new Promise(resolve => {
+        if(sound) {
+            sound.stop(() => {
+                resolve(sound)
+            })
+        }else {
+            resolve(sound)
+        }
+    })
+}
+
 const getCurrentTime = () => {
     return new Promise(resolve => {
         if(sound && sound.isLoaded()) {
@@ -72,4 +84,5 @@ export {
     pause,
     getCurrentTime,
     getDuration,
+    stop,
 }
