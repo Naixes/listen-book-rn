@@ -2861,7 +2861,7 @@ const play = () => {
                     reject()
                 }
                 // 释放资源
-                sound.release()
+                // sound.release()
             })
         }else {
             reject()
@@ -2884,7 +2884,7 @@ const pause = () => {
 const getCurrentTime = () => {
     return new Promise(resolve => {
         if(sound && sound.isLoaded()) {
-            sound.getCurrentTime(resolve)
+            sound.getCurrentTime(seconds => resolve(seconds))
         }else {
             resolve(0)
         }
@@ -2892,8 +2892,10 @@ const getCurrentTime = () => {
 }
 
 const getDuration = () => {
+    console.log('sound', !!sound);
     if(sound) {
-        return sound.getCurrentTime()
+        console.log('sound', sound.getDuration());
+        return sound.getDuration()
     }
     return 0
 }
@@ -2908,11 +2910,55 @@ export {
 
 // models/player.ts
 ...
+const PLAYER_URL = '/mock/11/player'
+
+export interface PlayerState {
+    id: string;
+    soundUrl: string;
+    playState: string;
+    currentTime: number;
+    duration: number;
+}
+
+export interface PlayerModel extends Model {
+    namespace: 'player',
+    state: PlayerState,
+    effects: {
+        fetchPlayer: Effect,
+        play: Effect,
+        pause: Effect,
+        // 监听播放时间
+        // EffectWithType 是一个数组
+        currentTimeWatcher: EffectWithType
+    },
+    reducers: {
+        setState: Reducer<PlayerState>
+    }
+}
 
 const initialState: PlayerState = {
     id: '',
     soundUrl: '',
     playState: '',
+    currentTime: 0,
+    duration: 0,
+}
+
+// 延时函数
+const delay = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout))
+
+// 每隔一秒获取音频时间
+function* currentTime({call, put}: EffectsCommandMap) {
+    while(true) {
+        yield call(delay, 1000)
+        const currentTime = yield call(getCurrentTime)
+        yield put({
+            type: 'setState',
+            payload: {
+                currentTime
+            }
+        })
+    }
 }
 
 const playerModel: PlayerModel = {
@@ -2929,22 +2975,27 @@ const playerModel: PlayerModel = {
     effects: {
         *fetchPlayer({payload}, {call, put}) {
             const {data} = yield call(axios.get, PLAYER_URL, {params: {id: payload.id}})
-            yield put({
-                type: 'setState',
-                payload: {
-                    id: data.id,
-                    soundUrl: data.soundUrl
-                }
-            })
+            console.log('getDuration', getDuration());
+            
             // 初始化音频
             yield call(initPlay, data.soundUrl)
             // 播放音频
             yield put({
                 type: 'play'
             })
+            // 保存数据
+            yield put({
+                type: 'setState',
+                payload: {
+                    id: data.id,
+                    soundUrl: data.soundUrl,
+                    duration: getDuration()
+                }
+            })
         },
         // 播放音频
         *play({payload}, {call, put}) {
+            // 修改播放状态
             yield put({
                 type: 'setState',
                 payload: {
@@ -2958,7 +3009,34 @@ const playerModel: PlayerModel = {
                     playState: 'played',
                 }
             })
-        }
+        },
+        // 暂停音频
+        *pause({payload}, {call, put}) {
+            yield call(pause)
+            yield put({
+                type: 'setState',
+                payload: {
+                    playState: 'played',
+                }
+            })
+        },
+        // 监听播放时间
+        // 参数是生成器函数
+        currentTimeWatcher: [
+            function*(sagaEffects) {
+                const {call, race, take} = sagaEffects
+                // 启动轮询
+                while(true) {
+                    // 监听play
+                    yield take('play')
+                    yield race([call(currentTime, sagaEffects), take('pause')])
+                }
+            },
+            {
+                // 监听，在dva加载时执行参数1的函数
+                type: 'watcher'
+            }
+        ]
     }
 }
 
@@ -2970,3 +3048,40 @@ export default playerModel
 显示进度条：监听播放进度
 
 安装库`yarn add react-native-slider-x`
+
+```tsx
+// pages/Detail/PlayerSlider.tsx
+...
+
+class PlayerSlider extends React.Component<IProps> {
+    renderThumb = () => {
+        const {currentTime, duration} = this.props
+        return (
+            <View>
+                <Text style={styles.text}>{formatTime(currentTime)}/{formatTime(duration)}</Text>
+            </View>
+        )
+    }
+
+    render() {
+        const {currentTime, duration} = this.props
+
+        return (
+            <View style={styles.container}>
+                <Slider
+                    value={currentTime}
+                    maximumValue={duration}
+                    maximumTrackTintColor="rgba(255,255,255,0.3)"
+                    minimumTrackTintColor="#fff"
+                    renderThumb={this.renderThumb}
+                    thumbStyle={styles.thumb}
+                ></Slider>
+            </View>
+        )
+    }
+}
+...
+
+export default connector(PlayerSlider)
+```
+

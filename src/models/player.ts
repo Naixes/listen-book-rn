@@ -70,6 +70,13 @@ const playerModel: PlayerModel = {
             const {data} = yield call(axios.get, PLAYER_URL, {params: {id: payload.id}})
             console.log('getDuration', getDuration());
             
+            // 初始化音频
+            yield call(initPlay, data.soundUrl)
+            // 播放音频
+            yield put({
+                type: 'play'
+            })
+            // 保存数据
             yield put({
                 type: 'setState',
                 payload: {
@@ -77,12 +84,6 @@ const playerModel: PlayerModel = {
                     soundUrl: data.soundUrl,
                     duration: getDuration()
                 }
-            })
-            // 初始化音频
-            yield call(initPlay, data.soundUrl)
-            // 播放音频
-            yield put({
-                type: 'play'
             })
         },
         // 播放音频
