@@ -5,7 +5,8 @@ import { IBarrageInTrack } from '.'
 
 interface IProps {
     data: IBarrageInTrack,
-    outside: (data: IBarrageInTrack) => void
+    outside: (data: IBarrageInTrack) => void,
+    animateListener:  (data: IBarrageInTrack) => void,
 }
 
 class BarrageItem extends React.PureComponent<IProps> {
@@ -13,7 +14,7 @@ class BarrageItem extends React.PureComponent<IProps> {
     translateX = new Animated.Value(0)
 
     componentDidMount() {
-        const {data, outside} = this.props
+        const {data, outside, animateListener} = this.props
         Animated.timing(this.translateX, {
             toValue: 10,
             duration: 6000,
@@ -29,7 +30,7 @@ class BarrageItem extends React.PureComponent<IProps> {
         // value 为 inputRange 0-10
         this.translateX.addListener(({value}) => {
             if(value > 3) {
-                data.isFree = true
+                animateListener(data)
             }
         })
     }

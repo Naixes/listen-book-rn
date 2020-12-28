@@ -1,6 +1,5 @@
-import { viewportWidth } from '@/utils/index'
 import React from 'react'
-import { Animated, StyleSheet, Text, Easing, View, StyleProp, ViewStyle } from 'react-native'
+import { StyleSheet, View, StyleProp, ViewStyle } from 'react-native'
 import BarrageItem from './Item'
 
 export interface IBarrage {
@@ -27,7 +26,8 @@ interface IState {
 // 添加弹幕
 function addBarrage(data: IBarrage[], maxTrack: number, list: IBarrageInTrack[][]) {
     for (let index = 0; index < data.length; index++) {
-        const trackIndex = getTrackIndex(maxTrack, list) || -1
+        const trackIndex = getTrackIndex(maxTrack, list)
+        
         if(trackIndex < 0) {
             continue
         }
@@ -38,6 +38,7 @@ function addBarrage(data: IBarrage[], maxTrack: number, list: IBarrageInTrack[][
         const barrage = {
             ...data[index],
             trackIndex,
+            isFree: false,
         }
         list[trackIndex].push(barrage)
     }
@@ -52,6 +53,7 @@ function getTrackIndex(maxTrack: number, list: IBarrageInTrack[][]) {
             return index
         }
         const lastBarrage = barrages[barrages.length - 1]
+        
         if(lastBarrage.isFree) {
             return index
         }
@@ -63,6 +65,11 @@ class Barrage extends React.Component<IProps, IState> {
     state = {
         data: this.props.source,
         list: [this.props.source.map(item => ({...item, trackIndex: 0}))],
+    }
+
+    // 监听动画时修改空闲标记
+    animateListener = (data: IBarrageInTrack) => {
+        data.isFree = true;
     }
 
     // 生命周期函数，从props中获取数据更新state，会在每次重新渲染时调用
@@ -98,6 +105,7 @@ class Barrage extends React.Component<IProps, IState> {
                     key={barrage.id}
                     data={barrage}
                     outside={this.outsideHandler}
+                    animateListener={this.animateListener}
                 ></BarrageItem>
             )
         })

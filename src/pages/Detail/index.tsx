@@ -13,7 +13,7 @@ import LinearGradient from 'react-native-linear-gradient'
 import Barrage, { IBarrage } from '@/components/Barrage'
 
 const data: string[] = [
-    '岁的妇女和进口奖励几乎都oh几乎要更换一台有几个说明你',
+    '岁的妇女和进口奖励几乎都oh几乎要更',
     '已经不久阿努克不好看不你就是',
     '和身体个陛下不是，花椒壳',
     '教育和管理不好使了，户目标',
@@ -107,7 +107,7 @@ class Detail extends React.Component<IProps, IState> {
                     barrageData: [{id, title}]
                 })
             }
-        }, 1000)
+        }, 500)
     }
 
     toggle = () => {

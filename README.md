@@ -3358,7 +3358,7 @@ interface IState {
 // 添加弹幕
 function addBarrage(data: IBarrage[], maxTrack: number, list: IBarrageInTrack[][]) {
     for (let index = 0; index < data.length; index++) {
-        const trackIndex = getTrackIndex(maxTrack, list) || -1
+        const trackIndex = getTrackIndex(maxTrack, list)
         if(trackIndex < 0) {
             continue
         }
@@ -3613,8 +3613,6 @@ class Detail extends React.Component<IProps, IState> {
 
 export default connector(Detail)
 ```
-
-
 
 #### 底部标签播放
 
