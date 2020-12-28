@@ -1,5 +1,6 @@
-import { NavigationState } from '@react-navigation/native'
+import { NavigationState, NavigationContainerRef } from '@react-navigation/native'
 import {Dimensions} from 'react-native'
+import React from 'react';
 
 const {width: viewportWidth, height: viewportHeight} = Dimensions.get('window')
 
@@ -33,11 +34,21 @@ function getActiveTabName(state: NavigationState) {
     return route.name
 }
 
+const navigationRef = React.createRef<NavigationContainerRef>()
+
+function navigate(name: string, params?: any) {
+    if(navigationRef.current) {
+        navigationRef.current.navigate(name, params)
+    }
+}
+
 export {
     formatTime,
     viewportWidth,
     viewportHeight,
     widFromPer,
     heiFromPer,
-    getActiveTabName
+    getActiveTabName,
+    navigationRef,
+    navigate,
 }

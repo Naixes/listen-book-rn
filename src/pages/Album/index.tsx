@@ -1,5 +1,5 @@
 import React from 'react'
-import { Image, StyleSheet, Text, View, Animated } from 'react-native'
+import { Image, StyleSheet, Text, View, Animated, findNodeHandle } from 'react-native'
 import {useHeaderHeight} from '@react-navigation/stack'
 import { connect, ConnectedProps } from 'react-redux'
 import { RouteProp } from '@react-navigation/native'
@@ -34,12 +34,17 @@ interface IProps extends ModelState {
     navigation: ModelStackProps
 }
 
+interface IState {
+    viewRef: number | null;
+}
+
 const USE_NATIVE_DRIVER = true
 const HEADER_HEIGHT = 260
 
 // useHeaderHeight是hook函数在函数式组件中使用
-class Album extends React.Component<IProps> {
+class Album extends React.Component<IProps, IState> {
     RANGE = [-(HEADER_HEIGHT - this.props.headerHeight), 0]
+    backgroundImage = React.createRef<Image>();
     // 1. 声明动画值
     translationY = new Animated.Value(0)
     translationYOffset = new Animated.Value(0)
@@ -64,6 +69,10 @@ class Album extends React.Component<IProps> {
         })
     }
 
+    onLoadEnd = () => {
+        this.setState({viewRef: findNodeHandle(this.backgroundImage.current)});
+    }
+
     renderHeader = () => {
         const {route, headerHeight, summary, author} = this.props
         const {title, image} = route.params.item
@@ -72,10 +81,18 @@ class Album extends React.Component<IProps> {
                 {/* 背景 */}
                 {/* BlurView包含的组件都会模糊 */}
                 {/* blurAmount：模糊程度，默认10 */}
-                <Image style={styles.background} source={{uri: image}}></Image>
+                <Image
+                    ref={this.backgroundImage}
+                    style={styles.background}
+                    source={{uri: image}}
+                    onLoadEnd={this.onLoadEnd}
+                ></Image>
                 {/* BlurView不能有子元素 */}
-                <BlurView blurType='light' blurAmount={10} style={StyleSheet.absoluteFillObject}>
-                </BlurView>
+                {
+                    this.state.viewRef && 
+                    <BlurView blurType='light' blurAmount={10} style={StyleSheet.absoluteFillObject}>
+                    </BlurView>
+                }
                 <View style={styles.leftView}>
                     <Image style={styles.thumbnail} source={{uri: image}}></Image>
                     <Image style={styles.coverRight} source={CoverRight}></Image>

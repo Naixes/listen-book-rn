@@ -1,5 +1,5 @@
 import { NavigationContainer, RouteProp } from '@react-navigation/native'
-import { CardStyleInterpolators, createStackNavigator, HeaderStyleInterpolators, StackNavigationProp, TransitionPresets } from '@react-navigation/stack'
+import { CardStyleInterpolators, createStackNavigator, HeaderStyleInterpolators, StackNavigationProp, TransitionPresets, NavigationState } from '@react-navigation/stack'
 import React from 'react'
 
 // Home为标签选择器
@@ -10,6 +10,8 @@ import Album from '@/pages/Album'
 import Animated from 'react-native-reanimated'
 import Detail from '@/pages/Detail'
 import Icon from '@/assets/iconfont/index'
+import PlayView from '@/pages/views/PlayView';
+import { getActiveTabName, navigationRef } from '../utils';
 
 // RootStackScreen
 
@@ -178,10 +180,22 @@ const ModelStackScreen = () => {
 }
 
 class Navigator extends React.Component {
+    state = {
+        routeName: 'Root'
+    }
+    onStateChange = (state: NavigationState) => {
+        const routeName = getActiveTabName(state)
+        this.setState({
+            routeName
+        })
+    }
     render() {
+        const {routeName} = this.state
         return (
-            <NavigationContainer>
+            // 页面切换时触发 onStateChange
+            <NavigationContainer ref={navigationRef} onStateChange={this.onStateChange}>
                 <ModelStackScreen></ModelStackScreen>
+                <PlayView routeName={routeName}></PlayView>
             </NavigationContainer>
         )
     }

@@ -40,6 +40,7 @@ const getText = () => {
 
 const mapStateToProps = ({player}: RootState) => {
     return {
+        id: player.id,
         soundUrl: player.soundUrl,
         playState: player.playState,
         title: player.title,
@@ -75,13 +76,16 @@ class Detail extends React.Component<IProps, IState> {
     animate = new Animated.Value(1)
 
     componentDidMount() {
-        const {dispatch, route, navigation, title} = this.props
-        dispatch({
-            type: 'player/fetchPlayer',
-            payload: {
-                id: route.params.id
-            }
-        })
+        const {dispatch, route, navigation, title, id} = this.props
+        // 从播放按钮跳转时没有 params
+        if(route.params && route.params.id !== id) {
+            dispatch({
+                type: 'player/fetchPlayer',
+                payload: {
+                    id: route.params.id
+                }
+            })
+        }
         // 设置标题
         navigation.setOptions({
             headerTitle: title

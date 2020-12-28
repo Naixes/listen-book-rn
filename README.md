@@ -3616,3 +3616,243 @@ export default connector(Detail)
 
 #### 底部标签播放
 
+播放时显示图片并旋转
+
+显示进度：安装库`yarn add react-native-circular-progress`，生成圆形进度条
+
+```tsx
+// /pages/views/PlayButton.tsx
+...
+
+const mapStateToProps = ({player}: RootState) => {
+    return {
+        currentTime: player.currentTime,
+        duration: player.duration,
+    }
+}
+const connector = connect(mapStateToProps)
+type ModelState = ConnectedProps<typeof connector>
+
+interface IProps extends ModelState {}
+
+class Progress extends React.PureComponent<IProps> {
+    render() {
+        const {children, currentTime, duration} = this.props
+        const fill = duration ? currentTime / duration * 100 : 0
+        return (
+            <AnimatedCircularProgress
+                size={40}
+                width={2}
+                tintColor="#f86442"
+                backgroundColor="#ededed"
+                fill={fill}
+            >
+                {() => <>{children}</>}
+            </AnimatedCircularProgress>
+        )
+    }
+}
+
+export default connector(Progress)
+```
+
+点击跳转详情
+
+```tsx
+// /navigator/BottomTabs.tsx
+// 增加一个Screen
+...
+<Tab.Screen
+    name="paly"
+    component={PlayButton}
+    options={({navigation}) => ({
+        tabBarButton: () => {
+            return (<PlayButton onPress={() => navigation.navigator('Detail')} />)
+        },
+    })}
+></Tab.Screen>
+...
+
+// /pages/views/PlayButton.tsx
+...
+import Progress from '@/pages/views/CircleProgress'
+
+const mapStateToProps = ({player}: RootState) => {
+    return {
+        thumbnailUrl: player.thumbnailUrl,
+        playState: player.playState,
+    }
+}
+const connector = connect(mapStateToProps)
+type ModelState = ConnectedProps<typeof connector>
+
+interface IProps extends ModelState {
+    onPress: () => void
+}
+
+class PlayButton extends React.Component<IProps> {
+    animate = new Animated.Value(0)
+    rotate: Animated.AnimatedInterpolation
+    timing: Animated.CompositeAnimation
+    constructor(props: IProps) {
+        super(props)
+        this.timing = Animated.loop(Animated.timing(this.animate, {
+            toValue: 1,
+            duration: 10000,
+            useNativeDriver: true,
+            easing: Easing.linear,
+        }), {iterations: -1})
+        this.rotate = this.animate.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0deg', '360deg'],
+        })
+    }
+    componentDidMount() {
+        const {playState} = this.props
+        if(playState === 'playing') {
+            this.timing.start()
+        }
+    }
+    componentDidUpdate() {
+        const {playState} = this.props
+        if(playState === 'playing') {
+            this.timing.start()
+        }else {
+            this.timing.stop()
+        }
+    }
+    onPress = () => {
+        const {onPress, thumbnailUrl} = this.props
+        if(thumbnailUrl && onPress) {
+            onPress()
+        }
+    }
+    render() {
+        const {thumbnailUrl} = this.props
+        return (
+            <Touchable style={styles.play} onPress={this.onPress}>
+                <Progress>
+                    <Animated.View style={{transform: [{rotate: this.rotate}]}}>
+                        {
+                            thumbnailUrl ?
+                            <Image source={{uri: thumbnailUrl}} style={styles.image}></Image> :
+                            <Icon name="icon-bofang3" color="#ededed" size={40}></Icon>
+                        }
+                    </Animated.View>
+                </Progress>
+            </Touchable>
+        )
+    }
+}
+...
+
+export default connector(PlayButton)
+```
+
+#### 独立的播放按钮
+
+暂停和部分页面不显示
+
+点击跳转详情页，通过ref实现
+
+```tsx
+// 获取当前页面
+// /navigator/index.tsx
+...
+
+class Navigator extends React.Component {
+    state = {
+        routeName: 'Root'
+    }
+    onStateChange = (state: NavigationState) => {
+        const routeName = getActiveTabName(state)
+        this.setState({
+            routeName
+        })
+    }
+    render() {
+        const {routeName} = this.state
+        return (
+            // 页面切换时触发 onStateChange
+            <NavigationContainer ref={navigationRef} onStateChange={this.onStateChange}>
+                <ModelStackScreen></ModelStackScreen>
+                <PlayView routeName={routeName}></PlayView>
+            </NavigationContainer>
+        )
+    }
+}
+...
+
+export default Navigator
+
+// /pages/views/PlayView.tsx
+...
+import PlayButton from './PlayButton';
+import { viewportWidth, navigate } from '@/utils/index';
+
+const mapStateToProps = ({player}: RootState) => {
+    return {
+        playState: player.playState,
+    }
+}
+const connector = connect(mapStateToProps)
+type ModelState = ConnectedProps<typeof connector>
+
+interface IProps extends ModelState {
+    routeName: string;
+}
+
+class PlayView extends React.Component<IProps> {
+    onPress = () => {
+        navigate('Detail')
+    }
+    render() {
+        const {routeName, playState} = this.props
+        if(['Root', 'Detail'].includes(routeName) || playState === 'pause') {
+            return null
+        }
+        return (
+            <View style={styles.container}>
+                <Text>{routeName}</Text>
+                <PlayButton onPress={this.onPress}></PlayButton>
+            </View>
+        )
+    }
+}
+
+const width = 50
+
+const styles = StyleSheet.create({
+    container: {
+        ...
+        // 阴影
+        ...Platform.select({
+            android: {
+                elevation: 4
+            },
+            ios: {
+                shadowColor: 'rgba(0,0,0,0.3)',
+                shadowOpacity: 0.85,
+                shadowRadius: 5,
+                shadowOffset: {
+                    width: StyleSheet.hairlineWidth,
+                    height: StyleSheet.hairlineWidth,
+                }
+            },
+        })
+    }
+})
+
+export default connector(PlayView)
+
+// utils
+...
+const navigationRef = React.createRef<NavigationContainerRef>()
+
+function navigate(name: string, params?: any) {
+    if(navigationRef.current) {
+        navigationRef.current.navigate(name, params)
+    }
+}
+```
+

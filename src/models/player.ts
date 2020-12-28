@@ -41,7 +41,7 @@ const initialState: PlayerState = {
     id: '',
     title: '',
     soundUrl: '',
-    playState: '',
+    playState: 'pause',
     currentTime: 0,
     duration: 0,
     prevId: '',
@@ -80,8 +80,9 @@ const playerModel: PlayerModel = {
     },
     effects: {
         *fetchPlayer({payload}, {call, put}) {
+            // 先停止播放
+            yield call(stop)
             const {data} = yield call(axios.get, PLAYER_URL, {params: {id: payload.id}})
-            console.log('getDuration', getDuration());
             
             // 初始化音频
             yield call(initPlay, data.soundUrl)
@@ -102,8 +103,6 @@ const playerModel: PlayerModel = {
         },
         // 播放上一首
         *prev({payload}, {call, put, select}) {
-            // 先停止播放
-            yield call(stop)
             const {id, sounds}: PlayerState = yield select(({player}: RootState) => player)
             const index = sounds.findIndex(item => item.id === id)
             const currentIndex = index - 1
@@ -130,8 +129,6 @@ const playerModel: PlayerModel = {
         },
         // 播放下一首
         *next({payload}, {call, put, select}) {
-            // 先停止播放
-            yield call(stop)
             const {id, sounds}: PlayerState = yield select(({player}: RootState) => player)
             const index = sounds.findIndex(item => item.id === id)
             const currentIndex = index + 1

@@ -7,6 +7,7 @@ import { RootStackParamList, RootStackProps } from '.'
 import { getFocusedRouteNameFromRoute, RouteProp } from '@react-navigation/native'
 import Icon from '@/assets/iconfont/index'
 import HomeTabs from '@/navigator/HomeTabs'
+import PlayButton from '@/pages/views/PlayButton';
 
 type Route = RouteProp<RootStackParamList, 'BottomTab'>;
 
@@ -18,6 +19,7 @@ export interface IProps {
 export type BottomTabParamList = {
     HomeTabs: undefined;
     Listen: undefined;
+    paly: undefined;
     Found: undefined;
     Account: undefined;
 }
@@ -88,6 +90,15 @@ class BottomTabs extends React.Component<IProps> {
                             <Icon name="icon-shoucang" color={color} size={size} />
                         )
                     }}
+                ></Tab.Screen>
+                <Tab.Screen
+                    name="paly"
+                    component={PlayButton}
+                    options={({navigation}) => ({
+                        tabBarButton: () => {
+                            return (<PlayButton onPress={() => navigation.navigator('Detail')} />)
+                        },
+                    })}
                 ></Tab.Screen>
                 <Tab.Screen
                     name="Found"
