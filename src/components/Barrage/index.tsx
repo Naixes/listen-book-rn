@@ -1,36 +1,123 @@
 import { viewportWidth } from '@/utils/index'
 import React from 'react'
-import { Animated, StyleSheet, Text, Easing } from 'react-native'
+import { Animated, StyleSheet, Text, Easing, View, StyleProp, ViewStyle } from 'react-native'
+import BarrageItem from './Item'
 
-class Barrage extends React.Component {
-    translateX = new Animated.Value(0)
+export interface IBarrage {
+    id: number;
+    title: string;
+}
 
-    componentDidMount() {
-        Animated.timing(this.translateX, {
-            toValue: 10,
-            duration: 6000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-        }).start()
+export interface IBarrageInTrack extends IBarrage {
+    trackIndex: number;
+    isFree?: boolean;
+}
+
+interface IProps {
+    source: IBarrage[],
+    maxTrack: number,
+    style?: StyleProp<ViewStyle>
+}
+
+interface IState {
+    data: IBarrage[],
+    list: IBarrageInTrack[][],
+}
+
+// 添加弹幕
+function addBarrage(data: IBarrage[], maxTrack: number, list: IBarrageInTrack[][]) {
+    for (let index = 0; index < data.length; index++) {
+        const trackIndex = getTrackIndex(maxTrack, list) || -1
+        if(trackIndex < 0) {
+            continue
+        }
+        // 初始化
+        if(!list[trackIndex]) {
+            list[trackIndex] = []
+        }
+        const barrage = {
+            ...data[index],
+            trackIndex,
+        }
+        list[trackIndex].push(barrage)
+    }
+    return list
+}
+
+// 获取需要增加弹幕的轨道下标
+function getTrackIndex(maxTrack: number, list: IBarrageInTrack[][]) {
+    for (let index = 0; index < maxTrack; index++) {
+        const barrages = list[index]
+        if(!barrages || barrages.length === 0) {
+            return index
+        }
+        const lastBarrage = barrages[barrages.length - 1]
+        if(lastBarrage.isFree) {
+            return index
+        }
+    }
+    return -1
+}
+
+class Barrage extends React.Component<IProps, IState> {
+    state = {
+        data: this.props.source,
+        list: [this.props.source.map(item => ({...item, trackIndex: 0}))],
+    }
+
+    // 生命周期函数，从props中获取数据更新state，会在每次重新渲染时调用
+    static getDerivedStateFromProps(nextProps: IProps, prevState: IState) {
+        const {source, maxTrack} = nextProps
+        if(source !== prevState.data) {
+            // 返回新的state
+            return {
+                source,
+                // 合并list
+                list: addBarrage(source, maxTrack, prevState.list)
+            }
+        }
+        return null
+    }
+
+    outsideHandler = (data: IBarrageInTrack) => {
+        const {list} = this.state
+        const newList = list.slice()
+        if(newList.length > 0) {
+            const {trackIndex} = data
+            newList[trackIndex] = newList[trackIndex].filter(item => item.id !== data.id)
+            this.setState({
+                list: newList
+            })
+        }
+    }
+
+    renderItem = (item: IBarrageInTrack[], index: number) => {
+        return item.map(barrage => {
+            return (
+                <BarrageItem
+                    key={barrage.id}
+                    data={barrage}
+                    outside={this.outsideHandler}
+                ></BarrageItem>
+            )
+        })
     }
 
     render() {
+        const {list} = this.state
+        const {style} = this.props
         return (
-            <Animated.View style={{transform: [
-                {
-                    translateX: this.translateX.interpolate({
-                        inputRange: [0, 10],
-                        outputRange: [viewportWidth, 0]
-                    })
-                }
-            ]}}>
-                <Text>我是弹幕</Text>
-            </Animated.View>
+            <View style={[styles.container, style]}>
+                { list.map(this.renderItem) }
+            </View>
         )
     }
 }
 
 const styles = StyleSheet.create({
+    container: {
+        position: 'absolute',
+    }
 })
 
 export default Barrage

@@ -10,7 +10,33 @@ import Icon from '@/assets/iconfont/index'
 import PlayerSlider from './PlayerSlider'
 import { viewportWidth } from '@/utils/index'
 import LinearGradient from 'react-native-linear-gradient'
-import Barrage from '@/components/Barrage'
+import Barrage, { IBarrage } from '@/components/Barrage'
+
+const data: string[] = [
+    '岁的妇女和进口奖励几乎都oh几乎要更换一台有几个说明你',
+    '已经不久阿努克不好看不你就是',
+    '和身体个陛下不是，花椒壳',
+    '教育和管理不好使了，户目标',
+    '环境是不能通过因',
+    '护肤六十年',
+    '为你们王客',
+    '尚未充分加敦郡',
+    '和就这样办还是发给开始咯及欧文',
+    '教育和管理不好使了，户目标',
+    '维持境饰色能是v辅导班通过因',
+    '护肤六十创下二年',
+    '睡，加手势敦郡',
+    '纷纷这样办还是发给开始咯及欧文',
+    '教育和管理不好使了，户目标',
+    '一天上午是不能是v辅导班通过因',
+    '斯威夫特六十创下二年',
+]
+const randomIndex = (length: number) => {
+    return Math.floor(Math.random() * length)
+}
+const getText = () => {
+    return data[randomIndex(data.length)]
+}
 
 const mapStateToProps = ({player}: RootState) => {
     return {
@@ -32,6 +58,7 @@ interface IProps extends ModelState {
 
 interface IState {
     barrageVisible: boolean,
+    barrageData: IBarrage[],
 }
 
 const IMAGE_WIDTH = 180
@@ -41,6 +68,7 @@ const SCALE = viewportWidth / IMAGE_WIDTH
 class Detail extends React.Component<IProps, IState> {
     state = {
         barrageVisible: false,
+        barrageData: []
     }
 
     // 弹幕动画
@@ -58,6 +86,7 @@ class Detail extends React.Component<IProps, IState> {
         navigation.setOptions({
             headerTitle: title
         })
+        this.addBarrage()
     }
     componentDidUpdate(prevProps: IProps) {
         const {navigation, title} = this.props
@@ -66,6 +95,19 @@ class Detail extends React.Component<IProps, IState> {
                 headerTitle: title
             })
         }
+    }
+
+    addBarrage = () => {
+        setInterval(() => {
+            const {barrageVisible} = this.state
+            if(barrageVisible) {
+                const id = Date.now()
+                const title = getText()
+                this.setState({
+                    barrageData: [{id, title}]
+                })
+            }
+        }, 1000)
     }
 
     toggle = () => {
@@ -103,7 +145,7 @@ class Detail extends React.Component<IProps, IState> {
 
     render() {
         const {playState, prevId, nextId, thumbnailUrl} = this.props
-        const {barrageVisible} = this.state
+        const {barrageVisible, barrageData} = this.state
         return (
             <View style={styles.container}>
                 {/* 图片 */}
@@ -121,12 +163,19 @@ class Detail extends React.Component<IProps, IState> {
                             {/* 渐变色 */}
                             <LinearGradient colors={['rgba(128,104,102,0.5)', '#807c66']} style={styles.linear}></LinearGradient>
                             {/* 弹幕 */}
-                            <Barrage></Barrage>
+                            <Barrage
+                                source={barrageData}
+                                maxTrack={5}
+                                style={{top: PADDING_TOP}}
+                            ></Barrage>
                         </>
                     )
                 }
-                {/* 弹幕 */}
-                <Touchable onPress={this.barrage} style={styles.barrageBtn}>
+                {/* 弹幕按钮 */}
+                <Touchable
+                    onPress={this.barrage}
+                    style={styles.barrageBtn}
+                >
                     <Text style={styles.barrageText}>弹幕</Text>
                 </Touchable>
                 {/* 进度条 */}

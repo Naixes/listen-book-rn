@@ -3261,3 +3261,360 @@ export default connector(Detail)
 ```
 
 ##### 图片背景弹幕
+
+###### 弹幕
+
+超出后消失
+
+多轨道
+
+单轨道多弹幕
+
+```tsx
+// pages/Barrage/item.tsx
+...
+
+interface IProps {
+    data: IBarrageInTrack,
+    outside: (data: IBarrageInTrack) => void
+}
+
+class BarrageItem extends React.PureComponent<IProps> {
+
+    translateX = new Animated.Value(0)
+
+    componentDidMount() {
+        const {data, outside} = this.props
+        Animated.timing(this.translateX, {
+            toValue: 10,
+            duration: 6000,
+            easing: Easing.linear,
+            useNativeDriver: true,
+        }).start(({finished}) => {
+            // 监听动画结束
+            if(finished) {
+                outside(data)
+            }
+        })
+        // 监听动画
+        // value 为 inputRange 0-10
+        this.translateX.addListener(({value}) => {
+            if(value > 3) {
+                data.isFree = true
+            }
+        })
+    }
+
+    render() {
+        const {data} = this.props
+        // 获取弹幕大概长度
+        const width = data.title.length * 15
+        return (
+            <Animated.View style={{
+                transform: [
+                    {
+                        translateX: this.translateX.interpolate({
+                            inputRange: [0, 10],
+                            outputRange: [viewportWidth, -width]
+                        })
+                    }
+                ],
+                position: 'absolute',
+                top: data.trackIndex * 30
+            }}>
+                <Text>{data.title}</Text>
+            </Animated.View>
+        )
+    }
+}
+
+export default BarrageItem
+```
+
+```tsx
+// pages/Barrage/index.tsx
+...
+export interface IBarrage {
+    id: number;
+    title: string;
+}
+
+export interface IBarrageInTrack extends IBarrage {
+    trackIndex: number;
+    isFree?: boolean;
+}
+
+interface IProps {
+    source: IBarrage[],
+    maxTrack: number,
+    style?: StyleProp<ViewStyle>
+}
+
+interface IState {
+    data: IBarrage[],
+    list: IBarrageInTrack[][],
+}
+
+// 添加弹幕
+function addBarrage(data: IBarrage[], maxTrack: number, list: IBarrageInTrack[][]) {
+    for (let index = 0; index < data.length; index++) {
+        const trackIndex = getTrackIndex(maxTrack, list) || -1
+        if(trackIndex < 0) {
+            continue
+        }
+        // 初始化
+        if(!list[trackIndex]) {
+            list[trackIndex] = []
+        }
+        const barrage = {
+            ...data[index],
+            trackIndex,
+        }
+        list[trackIndex].push(barrage)
+    }
+    return list
+}
+
+// 获取需要增加弹幕的轨道下标
+function getTrackIndex(maxTrack: number, list: IBarrageInTrack[][]) {
+    for (let index = 0; index < maxTrack; index++) {
+        const barrages = list[index]
+        if(!barrages || barrages.length === 0) {
+            return index
+        }
+        const lastBarrage = barrages[barrages.length - 1]
+        if(lastBarrage.isFree) {
+            return index
+        }
+    }
+    return -1
+}
+
+class Barrage extends React.Component<IProps, IState> {
+    state = {
+        data: this.props.source,
+        list: [this.props.source.map(item => ({...item, trackIndex: 0}))],
+    }
+
+    // 生命周期函数，从props中获取数据更新state，会在每次重新渲染时调用
+    static getDerivedStateFromProps(nextProps: IProps, prevState: IState) {
+        const {source, maxTrack} = nextProps
+        if(source !== prevState.data) {
+            // 返回新的state
+            return {
+                source,
+                // 合并list
+                list: addBarrage(source, maxTrack, prevState.list)
+            }
+        }
+        return null
+    }
+
+    outsideHandler = (data: IBarrageInTrack) => {
+        const {list} = this.state
+        const newList = list.slice()
+        if(newList.length > 0) {
+            const {trackIndex} = data
+            newList[trackIndex] = newList[trackIndex].filter(item => item.id !== data.id)
+            this.setState({
+                list: newList
+            })
+        }
+    }
+
+    renderItem = (item: IBarrageInTrack[], index: number) => {
+        return item.map(barrage => {
+            return (
+                <BarrageItem
+                    key={barrage.id}
+                    data={barrage}
+                    outside={this.outsideHandler}
+                ></BarrageItem>
+            )
+        })
+    }
+
+    render() {
+        const {list} = this.state
+        const {style} = this.props
+        return (
+            <View style={[styles.container, style]}>
+                { list.map(this.renderItem) }
+            </View>
+        )
+    }
+}
+...
+
+export default Barrage
+```
+
+```tsx
+// pages/Detail/index.tsx
+...
+
+const data: string[] = [
+    '岁的妇女和进口奖励几乎都oh几乎要更换一台有几个说明你',
+    ...
+]
+const randomIndex = (length: number) => {
+    return Math.floor(Math.random() * length)
+}
+const getText = () => {
+    return data[randomIndex(data.length)]
+}
+
+const mapStateToProps = ({player}: RootState) => {
+    return {
+        soundUrl: player.soundUrl,
+        playState: player.playState,
+        title: player.title,
+        prevId: player.prevId,
+        nextId: player.nextId,
+        thumbnailUrl: player.thumbnailUrl,
+    }
+}
+const connector = connect(mapStateToProps)
+type ModelState = ConnectedProps<typeof connector>
+
+interface IProps extends ModelState {
+    navigation: ModelStackProps
+    route: RouteProp<ModelStackParamList, 'Detail'>
+}
+
+interface IState {
+    barrageVisible: boolean,
+    barrageData: IBarrage[],
+}
+
+const IMAGE_WIDTH = 180
+const PADDING_TOP = (viewportWidth - IMAGE_WIDTH) / 2
+const SCALE = viewportWidth / IMAGE_WIDTH
+
+class Detail extends React.Component<IProps, IState> {
+    state = {
+        barrageVisible: false,
+        barrageData: []
+    }
+
+    // 弹幕动画
+    animate = new Animated.Value(1)
+
+    componentDidMount() {
+        const {dispatch, route, navigation, title} = this.props
+        dispatch({
+            type: 'player/fetchPlayer',
+            payload: {
+                id: route.params.id
+            }
+        })
+        // 设置标题
+        navigation.setOptions({
+            headerTitle: title
+        })
+        this.addBarrage()
+    }
+    ...
+
+    addBarrage = () => {
+        setInterval(() => {
+            const {barrageVisible} = this.state
+            if(barrageVisible) {
+                const id = Date.now()
+                const title = getText()
+                this.setState({
+                    barrageData: [{id, title}]
+                })
+            }
+        }, 1000)
+    }
+    
+    barrage = () => {
+        this.setState({
+            barrageVisible: !this.state.barrageVisible
+        })
+        // 启动动画
+        Animated.timing(this.animate, {
+            toValue: this.state.barrageVisible ? 1 : SCALE,
+            duration: 100,
+            useNativeDriver: true,
+        }).start()
+    }
+
+    render() {
+        const {playState, prevId, nextId, thumbnailUrl} = this.props
+        const {barrageVisible, barrageData} = this.state
+        return (
+            <View style={styles.container}>
+                {/* 图片 */}
+                <View style={styles.imageContainer}>
+                    <Animated.Image
+                        style={[styles.image, {
+                            transform: [{scale: this.animate}]
+                        }]}
+                        source={{uri: thumbnailUrl}}
+                    ></Animated.Image>
+                </View>
+                {
+                    barrageVisible && (
+                        <>
+                            {/* 渐变色 */}
+                            <LinearGradient colors={['rgba(128,104,102,0.5)', '#807c66']} style={styles.linear}></LinearGradient>
+                            {/* 弹幕 */}
+                            <Barrage
+                                source={barrageData}
+                                maxTrack={5}
+                                style={{top: PADDING_TOP}}
+                            ></Barrage>
+                        </>
+                    )
+                }
+                {/* 弹幕按钮 */}
+                <Touchable
+                    onPress={this.barrage}
+                    style={styles.barrageBtn}
+                >
+                    <Text style={styles.barrageText}>弹幕</Text>
+                </Touchable>
+                {/* 进度条 */}
+                <PlayerSlider></PlayerSlider>
+                {/* 控制器 */}
+                <View style={styles.control}>
+                    <Touchable disabled={!prevId} onPress={this.prev}>
+                        <Icon
+                            name='icon-shangyishou'
+                            size={30}
+                            color='#fff'
+                            style={styles.button}
+                        ></Icon>
+                    </Touchable>
+                    <Touchable onPress={this.toggle}>
+                        <Icon
+                            name={playState === 'playing' ? 'icon-paste' : 'icon-bofang'}
+                            size={40}
+                            color='#fff'
+                            style={styles.button}
+                        ></Icon>
+                    </Touchable>
+                    <Touchable disabled={!nextId} onPress={this.next}>
+                        <Icon
+                            name='icon-xiayishou'
+                            size={30}
+                            color='#fff'
+                            style={styles.button}
+                        ></Icon>
+                    </Touchable>
+                </View>
+            </View>
+        )
+    }
+}
+...
+
+export default connector(Detail)
+```
+
+
+
+#### 底部标签播放
+
