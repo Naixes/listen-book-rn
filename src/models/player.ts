@@ -3,6 +3,7 @@ import axios from "axios";
 import { Effect, EffectsCommandMap, EffectWithType, Model } from "dva-core-ts";
 import { Reducer } from "redux";
 import { RootState } from ".";
+import { savePlayer } from "@/config/realm";
 
 const PLAYER_URL = '/mock/11/player'
 
@@ -79,7 +80,7 @@ const playerModel: PlayerModel = {
         }
     },
     effects: {
-        *fetchPlayer({payload}, {call, put}) {
+        *fetchPlayer({payload}, {call, put, select}) {
             // 先停止播放
             yield call(stop)
             const {data} = yield call(axios.get, PLAYER_URL, {params: {id: payload.id}})
@@ -100,6 +101,9 @@ const playerModel: PlayerModel = {
                     duration: getDuration()
                 }
             })
+            // 保存播放记录
+            const {id, title, thumbnailUrl, currentTime} = yield select(({player}: RootState) => player)
+            savePlayer({id, title, thumbnailUrl, currentTime, duration: getDuration()})
         },
         // 播放上一首
         *prev({payload}, {call, put, select}) {
@@ -171,7 +175,7 @@ const playerModel: PlayerModel = {
             })
         },
         // 暂停音频
-        *pause({payload}, {call, put}) {
+        *pause({payload}, {call, put, select}) {
             yield call(pause)
             yield put({
                 type: 'setState',
@@ -179,6 +183,9 @@ const playerModel: PlayerModel = {
                     playState: 'pause',
                 }
             })
+            // 更新播放记录
+            const {id, currentTime}: PlayerState = yield select(({player}: RootState) => player)
+            savePlayer({id, currentTime})
         },
         // 监听播放时间
         // 参数是生成器函数

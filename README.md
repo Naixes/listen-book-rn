@@ -1667,7 +1667,7 @@ export default connector(TopTabBarWrapper)
 
 - 安装本地库`yarn add @react-native-community/async-storage`，ios需链接
 
-一般不会直接使用，仅支持保存字符串类型，安装封装库`yarn add react-native-storage`
+一般不会直接使用，仅支持保存字符串类型，安装其封装库`yarn add react-native-storage`
 
 - 配置
 
@@ -3856,3 +3856,117 @@ function navigate(name: string, params?: any) {
 }
 ```
 
+### 我听模块
+
+#### 本地数据存储
+
+`yarn add realm`提供筛选，排序等功能，ios需链接（命令后--verbose可以查看详细进度，会卡住，需要修改代码，浏览器下载并保存到临时目录）
+
+```tsx
+// config/realm.ts
+import Realm from 'realm'
+
+// 表结构
+export interface IPlayer {
+    id: string;
+    title: string;
+    thumbnailUrl: string;
+    currentTime: number;
+    duration: number;
+    rate: number;
+}
+
+// 声明表
+class Player {
+    duration = 0
+    currentTime = 0
+    static schema = {
+        name: 'Player',
+        primaryKey: 'id',
+        properties: {
+            id: 'string',
+            title: 'string',
+            thumbnailUrl: 'string',
+            currentTime: {type: 'double', default: 0},
+            duration: {type: 'double', default: 0},
+        }
+    }
+
+    get rate() {
+        return this.duration > 0 ? Math.floor((this.currentTime * 100 / this.duration) * 100) / 100 : 0
+    }
+}
+
+// 更新表结构，指定版本号，从0开始；如有数据指定数据迁移函数
+// const realm = new Realm({schema: [Player], schemaVersion: 1, migration: (oldRealm, newRealm) => {
+//     if(oldRealm.schemaVersion < 1) {
+//         // ...
+//     }
+// }})
+const realm = new Realm({schema: [Player]})
+
+// 保存数据
+export function savePlayer(data: Partial<IPlayer>) {
+    try {
+        realm.write(() => {
+            realm.create('Player', data)
+        })
+    } catch (error) {
+        console.log('save error', error);
+    }
+}
+
+export default realm
+
+// 使用
+// /pages/listen.tsc
+...
+
+class Listen extends React.Component<IProps> {
+    renderItem = ({item}: ListRenderItemInfo<IPlayer>) => {
+        return (
+            <View style={styles.item}>
+                <Image style={styles.image} source={{uri: item.thumbnailUrl}}></Image>
+                <View style={styles.content}>
+                    <Text style={styles.title}>{item.title}</Text>
+                    <View style={styles.bottom}>
+                        <Icon name='icon-time' color="#999" size={14}></Icon>
+                        <Text style={styles.text}>{formatTime(item.currentTime)}</Text>
+                        <Text style={styles.rate}>已播放：{item.rate}%</Text>
+                    </View>
+                </View>
+                <Touchable onPress={() => this.delete(item)} style={styles.deleteBtn}>
+                    <Text style={styles.delete}>删除</Text>
+                </Touchable>
+            </View>
+        )
+    }
+
+    delete = (item: IPlayer) => {
+        realm.write(() => {
+            // 先查询
+            const player = realm.objects('Player').filtered(`id='${item.id}'`)
+            realm.delete(player)
+            // 刷新页面
+            this.setState({})
+        })
+    }
+    
+    render() {
+        const players = realm.objects<IPlayer>('Player')
+        return (
+            <FlatList
+                data={players}
+                renderItem={this.renderItem}
+            ></FlatList>
+        )
+    }
+}
+...
+
+export default Listen
+```
+
+
+
+##### 修改表结构
