@@ -18,6 +18,8 @@ interface FoundModel extends Model {
 
 const foundModel: FoundModel = {
     namespace: 'found',
+    // 必须写默认的state
+    state: {},
     effects: {
         *fetchList({callback}, {call}) {
             const {data} = yield call(axios.get, FOUND_URL)

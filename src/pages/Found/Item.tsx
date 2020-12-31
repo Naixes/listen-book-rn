@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, FlatList, ListRenderItemInfo, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import VideoControls from 'react-native-video-custom-controls'
 
 import { IFound } from '@/models/found';
@@ -25,7 +25,7 @@ class Item extends React.Component<IProps, IState> {
     render() {
         const {data, pause} = this.props
         return (
-            <view>
+            <View>
                 <Text>{data.title}</Text>
                 <VideoControls
                     paused={pause}
@@ -34,7 +34,7 @@ class Item extends React.Component<IProps, IState> {
                     source={{uri: data.videoUrl}}
                     style={styles.video}
                 ></VideoControls>
-            </view>
+            </View>
         )
     }
 }
