@@ -4,8 +4,9 @@ import home from '@/models/home'
 import category from '@/models/category'
 import album from './album'
 import player from './player'
+import found from './found'
 
-const models = [home, category, album, player]
+const models = [home, category, album, player, found]
 
 // 导出State类型
 export type RootState = {

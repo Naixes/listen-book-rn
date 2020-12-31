@@ -3114,6 +3114,8 @@ export default playerModel
 
 显示进度条：监听播放进度
 
+拖动进度条（未完成）
+
 安装库`yarn add react-native-slider-x`
 
 ```tsx
@@ -4067,6 +4069,161 @@ export default Listen
 > export default realm
 > ```
 >
-> 
+> 获取列表返回空对象
+>
+> https://github.com/realm/realm-js/issues/3306
+>
+> 官方给出的解决方案与上一bug冲突，暂不能解决
 
 ##### 修改表结构
+
+### 发现模块
+
+将逻辑写到dva中，将数据不存储在dva中
+
+视频依赖库：`npm i react-native-video`，`npm i -D @types/react-native-video`，ios需链接
+
+自带控制组件有bug，安装控制组件依赖库`npm i react-native-video-custom-controls`
+
+限制当前只播放一个视频
+
+播放视频时暂停音频
+
+播放音频时暂停视频（未完成）
+
+```tsx
+// /models/found.ts
+import { Model, Effect } from "dva-core-ts";
+import axios from 'axios';
+
+const FOUND_URL = '/mock/11/found/list'
+
+export interface IFound {
+    id: string;
+    title: string;
+    videoUrl: string;
+}
+
+interface FoundModel extends Model {
+    namespace: 'found',
+    effects: {
+        fetchList: Effect
+    }
+}
+
+const foundModel: FoundModel = {
+    namespace: 'found',
+    effects: {
+        *fetchList({callback}, {call}) {
+            const {data} = yield call(axios.get, FOUND_URL)
+            if(typeof callback === 'function') {
+                callback(data)
+            }
+        }
+    }
+}
+
+export default foundModel
+
+// /pages/Found/index.tsx
+...
+
+const connector = connect()
+type ModelState = ConnectedProps<typeof connector>
+
+interface IState {
+    list: IFound[];
+    currentId: string;
+
+}
+
+class Found extends React.Component<IProps, IState> {
+    state={
+        list: [],
+        currentId: ''
+    }
+
+    componentDidMount() {
+        const {dispatch} = this.props
+        dispatch({
+            type: 'found/fetchList',
+            callback: (data: IFound[]) => {
+                this.setState({
+                    list: data,
+                })
+            }
+        })
+    }
+    setCurrentId = (id: string) => {
+        const {dispatch} = this.props
+        this.setState({
+            currentId: id
+        })
+        // 暂停音频
+        if(id) {
+            dispatch({
+                type: 'player/pause'
+            })
+        }
+    }
+    renderItem = ({item}: ListRenderItemInfo<IFound>) => {
+        const {currentId} = this.state
+        // 判断当前视频是否正在播放
+        const pause = currentId !== item.id
+        return <Item pause={pause} setCurrentId={this.setCurrentId} data={item} />
+    }
+    render() {
+        const {list, currentId} = this.state
+        return (
+            // FlatList是一个PureComponent如果数据没有改变不会重新渲染
+            <FlatList
+                // extraData改变时可以让其重新渲染
+                extraData={currentId}
+                data={list}
+                renderItem={this.renderItem}
+            />
+        )
+    }
+}
+
+export default connector(Found)
+
+// /pages/Found/Item.tsx
+...
+
+interface IProps {
+    data: IFound,
+    setCurrentId: (id: string) => void,
+    pause: boolean,
+}
+
+class Item extends React.Component<IProps> {
+    onPlay = () => {
+        const {data, setCurrentId} = this.props
+        setCurrentId(data.id)
+    }
+    onPause = () => {
+        const {setCurrentId} = this.props
+        setCurrentId('')
+    }
+    render() {
+        const {data, pause} = this.props
+        return (
+            <view>
+                <Text>{data.title}</Text>
+                <VideoControls
+                    paused={pause}
+                    onPlay={this.onPlay}
+                    onPause={this.onPause}
+                    source={{uri: data.videoUrl}}
+                    style={styles.video}
+                ></VideoControls>
+            </view>
+        )
+    }
+}
+...
+
+export default Item
+```
+

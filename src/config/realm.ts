@@ -9,11 +9,12 @@ export interface IPlayer {
     duration: number;
     rate: number;
 }
-// 声明表
 
+// 声明表
 const Player = {
     name: 'Player',
     primaryKey: 'id',
+    embedded: true,
     properties: {
         id: 'string',
         title: 'string',
@@ -24,7 +25,7 @@ const Player = {
 }
 // 以下会导致闪退
 // @ haul-bundler / babel-preset-react-native，不会将“类”编译为“功能”，因此Realm可能不会使用‘new’实例化‘setting’
-// class Player {
+// class Player extends Realm.Object {
 //     duration = 0
 //     currentTime = 0
 //     static schema = {
@@ -50,14 +51,17 @@ const Player = {
 //         // ...
 //     }
 // }})
+
 const realm = new Realm({schema: [Player]})
 
 // 保存数据
 export function savePlayer(data: Partial<IPlayer>) {
     try {
         realm.write(() => {
-            realm.create('Player', data)
+            realm.create('Player', data, true)
+            
         })
+        // console.log('players', realm.objects('Player'))
     } catch (error) {
         console.log('save error', error);
     }

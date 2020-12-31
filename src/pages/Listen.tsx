@@ -7,6 +7,7 @@ import { formatTime } from '../utils';
 import Touchable from '@/components/Touchable';
 
 class Listen extends React.Component {
+    keyExtractor = (item: IPlayer) => item.id
     renderItem = ({item}: ListRenderItemInfo<IPlayer>) => {
         return (
             <View style={styles.item}>
@@ -38,8 +39,10 @@ class Listen extends React.Component {
     
     render() {
         const players = realm.objects<IPlayer>('Player')
+        
         return (
             <FlatList
+                keyExtractor={this.keyExtractor}
                 data={players}
                 renderItem={this.renderItem}
             ></FlatList>
