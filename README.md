@@ -3621,7 +3621,7 @@ export default connector(Detail)
 显示进度：安装库`yarn add react-native-circular-progress`，生成圆形进度条
 
 ```tsx
-// /pages/views/PlayButton.tsx
+// /pages/views/CircleProgress.tsx
 ...
 
 const mapStateToProps = ({player}: RootState) => {
@@ -3862,6 +3862,8 @@ function navigate(name: string, params?: any) {
 
 `yarn add realm`提供筛选，排序等功能，ios需链接（命令后--verbose可以查看详细进度，会卡住，需要修改代码，浏览器下载并保存到临时目录）
 
+安装报错该换为npm安装`npm i realm@5.0.1`
+
 ```tsx
 // config/realm.ts
 import Realm from 'realm'
@@ -3909,6 +3911,7 @@ const realm = new Realm({schema: [Player]})
 export function savePlayer(data: Partial<IPlayer>) {
     try {
         realm.write(() => {
+            // 此处闪退，解决见下文
             realm.create('Player', data)
         })
     } catch (error) {
@@ -3919,6 +3922,56 @@ export function savePlayer(data: Partial<IPlayer>) {
 export default realm
 
 // 使用
+// /models/player.ts
+...
+const playerModel: PlayerModel = {
+    ...
+    effects: {
+        *fetchPlayer({payload}, {call, put, select}) {
+            // 先停止播放
+            yield call(stop)
+            const {data} = yield call(axios.get, PLAYER_URL, {params: {id: payload.id}})
+            
+            // 初始化音频
+            yield call(initPlay, data.soundUrl)
+            // 播放音频
+            yield put({
+                type: 'play'
+            })
+            // 保存数据
+            yield put({
+                type: 'setState',
+                payload: {
+                    // 由于是mock数据这里使用参数的id
+                    id: payload.id,
+                    soundUrl: data.soundUrl,
+                    duration: getDuration()
+                }
+            })
+            // 保存播放记录
+            // const {id, title, thumbnailUrl, currentTime} = yield select(({player}: RootState) => player)
+            // savePlayer({id, title, thumbnailUrl, currentTime, duration: getDuration()})
+        },
+        ...
+        // 暂停音频
+        *pause({payload}, {call, put, select}) {
+            yield call(pause)
+            yield put({
+                type: 'setState',
+                payload: {
+                    playState: 'pause',
+                }
+            })
+            // 更新播放记录
+            // const {id, currentTime}: PlayerState = yield select(({player}: RootState) => player)
+            // savePlayer({id, currentTime})
+        },
+        ...
+    }
+}
+
+export default playerModel
+        
 // /pages/listen.tsc
 ...
 
@@ -3967,6 +4020,53 @@ class Listen extends React.Component<IProps> {
 export default Listen
 ```
 
-
+> 闪退：
+>
+> https://github.com/callstack/haul/issues/684
+>
+> Are you using `@haul-bundler/babel-preset-react-native`?? If so, the `class`es are not compiled to `functions` so Realm is probably not instantiating `Setting` with `new`. You can try replacing `class Setting { }` with `function Settings() { }`.
+>
+> ```ts
+> // /config/realm.ts
+> import Realm from 'realm'
+> ...
+> 
+> // 声明表
+> const Player = {
+>     name: 'Player',
+>     primaryKey: 'id',
+>     properties: {
+>         id: 'string',
+>         title: 'string',
+>         thumbnailUrl: 'string',
+>         currentTime: {type: 'double', default: 0},
+>         duration: {type: 'double', default: 0},
+>     }
+> }
+> // class Player {
+> //     duration = 0
+> //     currentTime = 0
+> //     static schema = {
+> //         name: 'Player',
+> //         primaryKey: 'id',
+> //         properties: {
+> //             id: 'string',
+> //             title: 'string',
+> //             thumbnailUrl: 'string',
+> //             currentTime: {type: 'double', default: 0},
+> //             duration: {type: 'double', default: 0},
+> //         }
+> //     }
+> 
+> //     // get rate() {
+> //     //     return this.duration > 0 ? Math.floor((this.currentTime * 100 / this.duration) * 100) / 100 : 0
+> //     // }
+> // }
+> ...
+> 
+> export default realm
+> ```
+>
+> 
 
 ##### 修改表结构

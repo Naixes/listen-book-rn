@@ -7,7 +7,6 @@ axios.defaults.baseURL = Config.API_URL
 axios.interceptors.request.use((config) => {
     return config
 }, (err) => {
-    console.log('request err', err);
     return Promise.reject(err)
 })
 
@@ -15,7 +14,6 @@ axios.interceptors.request.use((config) => {
 axios.interceptors.response.use((response) => {
     return response.data
 }, (err) => {
-    console.log('response err', err);
     return Promise.reject(err)
 })
 

@@ -20,6 +20,7 @@ import { IProgram } from '@/models/album'
 const mapStateToProps = ({album}: RootState) => {
     return {
         list: album.list,
+        album: album,
         summary: album.summary,
         author: album.author,
     }
@@ -43,6 +44,10 @@ const HEADER_HEIGHT = 260
 
 // useHeaderHeight是hook函数在函数式组件中使用
 class Album extends React.Component<IProps, IState> {
+    state = {
+      viewRef: null,
+    }
+    
     RANGE = [-(HEADER_HEIGHT - this.props.headerHeight), 0]
     backgroundImage = React.createRef<Image>();
     // 1. 声明动画值
@@ -71,6 +76,7 @@ class Album extends React.Component<IProps, IState> {
 
     onLoadEnd = () => {
         this.setState({viewRef: findNodeHandle(this.backgroundImage.current)});
+        
     }
 
     renderHeader = () => {
@@ -89,9 +95,15 @@ class Album extends React.Component<IProps, IState> {
                 ></Image>
                 {/* BlurView不能有子元素 */}
                 {
-                    this.state.viewRef && 
-                    <BlurView blurType='light' blurAmount={10} style={StyleSheet.absoluteFillObject}>
-                    </BlurView>
+                    this.state.viewRef ? 
+                    <BlurView
+                        blurType='light'
+                        blurAmount={10}
+                        style={StyleSheet.absoluteFillObject}
+                        viewRef={this.state.viewRef}
+                    >
+                    </BlurView> : 
+                    null
                 }
                 <View style={styles.leftView}>
                     <Image style={styles.thumbnail} source={{uri: image}}></Image>
@@ -180,8 +192,6 @@ class Album extends React.Component<IProps, IState> {
     }
 
     render() {
-        console.log('RANGE', this.RANGE);
-        
         return (
             // onHandlerStateChange手势状态改变时调用
             <PanGestureHandler onHandlerStateChange={this.onHandlerStateChange} onGestureEvent={this.onGestureEvent}>
@@ -220,7 +230,6 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         backgroundColor: '#eee',
         // 模糊效果，yarn add @react-native-community/blur
-
     },
     header: {
         height: HEADER_HEIGHT,
@@ -276,16 +285,6 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
 })
-
-// class Album extends React.Component {
-//     render() {
-//         return (
-//             <View>
-//                 <Text>频道模块</Text>
-//             </View>
-//         )
-//     }
-// }
 
 const Wrapper = function(props: IProps) {
     // 获取标题栏的高度

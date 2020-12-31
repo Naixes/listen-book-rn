@@ -12,9 +12,10 @@ const mapStateToProps = (state: RootState, props: MaterialTopTabBarProps) => {
   // 需要获取现在处于焦点的 tab 的名字
   const routeName = getActiveTabName(props.state)
   const modelState = state[routeName]
+  const linearColors = (modelState.carousels && modelState.carousels.length > 0) ? ((modelState.activeCarouselIndex && modelState.carousels[modelState.activeCarouselIndex]) ? modelState.carousels[modelState.activeCarouselIndex].colors : undefined) : undefined
   return {
     gradientVisible: modelState.gradientVisible,
-    linearColors: modelState.carousels && modelState.carousels.length > 0 ? (modelState.activeCarouselIndex ? modelState.carousels[modelState.activeCarouselIndex].colors : undefined) : undefined
+    linearColors,
   }
 }
 const connector = connect(mapStateToProps)

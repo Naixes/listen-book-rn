@@ -29,7 +29,6 @@ class PlayView extends React.Component<IProps> {
         }
         return (
             <View style={styles.container}>
-                <Text>{routeName}</Text>
                 <PlayButton onPress={this.onPress}></PlayButton>
             </View>
         )
