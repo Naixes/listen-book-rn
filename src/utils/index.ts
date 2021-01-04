@@ -42,6 +42,12 @@ function navigate(name: string, params?: any) {
     }
 }
 
+function goback() {
+    if(navigationRef.current) {
+        navigationRef.current.goBack()
+    }
+}
+
 export {
     formatTime,
     viewportWidth,
@@ -51,4 +57,5 @@ export {
     getActiveTabName,
     navigationRef,
     navigate,
+    goback,
 }

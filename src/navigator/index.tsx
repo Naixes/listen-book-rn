@@ -12,6 +12,7 @@ import Detail from '@/pages/Detail'
 import Icon from '@/assets/iconfont/index'
 import PlayView from '@/pages/views/PlayView';
 import { getActiveTabName, navigationRef } from '../utils';
+import Login from '@/pages/Login'
 
 // RootStackScreen
 
@@ -127,6 +128,7 @@ export type ModelStackParamList = {
     Detail: {
         id: string;
     };
+    Login: undefined;
 }
 
 export type ModelStackProps = StackNavigationProp<ModelStackParamList>
@@ -147,6 +149,7 @@ const ModelStackScreen = () => {
                 ...TransitionPresets.SlideFromRightIOS,
                 // 隐藏 ios 返回标题
                 headerBackTitleVisible: false,
+                headerTintColor: '#333',
             }}
         >
             <ModelStack.Screen
@@ -173,6 +176,13 @@ const ModelStackScreen = () => {
                             style={styles.headerBackImage}
                         ></Icon>
                     )
+                }}
+            ></ModelStack.Screen>
+            <ModelStack.Screen
+                name='Login'
+                component={Login}
+                options={{
+                    headerTitle: "登录"
                 }}
             ></ModelStack.Screen>
         </ModelStack.Navigator>

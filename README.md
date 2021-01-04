@@ -4227,3 +4227,95 @@ class Item extends React.Component<IProps> {
 export default Item
 ```
 
+### 账号模块
+
+表单管理formik和校验库yup，`npm i formik`
+
+> 安装时报错no such file or directory, rename xxx
+>
+> 解决：删除package-lock重新安装
+
+使用表单最外层使用ScrollView，避免键盘遮挡
+
+```tsx
+// /pages/Login.tsx
+...
+import * as Yup from 'yup'
+
+interface Values {
+    account: string;
+    password: string;
+}
+
+const initialValues = {
+    account: '',
+    password: '',
+}
+...
+
+const validationSchema = Yup.object().shape({
+    account: Yup.string().trim().required('请输入账号'),
+    password: Yup.string().trim().required('请输入密码'),
+})
+
+class Login extends React.Component<IProps> {
+    onSubmit = (values: Values) => {
+        const {dispatch} = this.props
+        
+        dispatch({
+            type: 'user/login',
+            payload: values
+        })
+    }
+    render() {
+        return (
+            // keyboardShouldPersistTaps:"handled"切换多个input时，键盘一直唤醒
+            <ScrollView keyboardShouldPersistTaps="handled">
+                <Text style={styles.logo}>听书</Text>
+                <Formik
+                    initialValues={initialValues}
+                    onSubmit={this.onSubmit}
+                    // 定义校验规则
+                    validationSchema={validationSchema}
+                >
+                    {({values, handleChange, handleBlur, handleSubmit, errors}) => {
+                        return (
+                            <View>
+                                <TextInput
+                                    onChangeText={handleChange('account')}
+                                    onBlur={handleBlur('account')}
+                                    value={values.account}
+                                ></TextInput>
+                                {errors.account && <Text>{errors.account}</Text>}
+                                <TextInput
+                                    onChangeText={handleChange('password')}
+                                    onBlur={handleBlur('password')}
+                                    value={values.password}
+                                    secureTextEntry
+                                ></TextInput>
+                                {errors.password && <Text>{errors.password}</Text>}
+                                <Touchable onPress={handleSubmit}>
+                                    <Text>登录</Text>
+                                </Touchable>
+                            </View>
+                        )
+                    }}
+                </Formik>
+            </ScrollView>
+        )
+    }
+}
+...
+
+export default connector(Login)
+```
+
+封装表单组件
+
+```tsx
+
+```
+
+保存登录状态，显示登录后内容
+
+封装登录状态判断
