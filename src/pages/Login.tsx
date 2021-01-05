@@ -46,6 +46,7 @@ class Login extends React.Component<IProps> {
         })
     }
     render() {
+        const {loading} = this.props
         return (
             // keyboardShouldPersistTaps:"handled"切换多个input时，键盘一直唤醒
             <ScrollView keyboardShouldPersistTaps="handled">
@@ -70,7 +71,7 @@ class Login extends React.Component<IProps> {
                                     secureTextEntry
                                     placeholder="请输入密码"
                                 ></Field>
-                                <Touchable style={styles.loginBtn} onPress={handleSubmit}>
+                                <Touchable disabled={loading} style={styles.loginBtn} onPress={handleSubmit}>
                                     <Text style={styles.loginBtnText}>登录</Text>
                                 </Touchable>
                             </View>

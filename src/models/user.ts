@@ -3,6 +3,7 @@ import axios from "axios";
 import { Effect, Model, SubscriptionsMapObject } from "dva-core-ts";
 import {Reducer} from 'redux'
 import { goback } from "../utils";
+import Toast from 'react-native-root-toast'
 
 const USER_URL = '/mock/11/login'
 
@@ -53,6 +54,12 @@ const userModel: UserModel = {
                 })
                 goback()
             }else {
+                Toast.show(msg, {
+                    duration: Toast.durations.LONG,
+                    position: Toast.positions.CENTER,
+                    shadow: true,
+                    animation: true, 
+                })
                 console.log('msg', msg);
             }
         },

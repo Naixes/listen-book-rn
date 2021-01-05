@@ -4313,9 +4313,337 @@ export default connector(Login)
 封装表单组件
 
 ```tsx
+// /components/Input.tsx
+import { FieldInputProps, FormikProps } from 'formik'
+import React from 'react'
+import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native'
 
+interface IProps extends TextInputProps {
+    field: FieldInputProps<any>;
+    form: FormikProps<any>;
+}
+
+class Input extends React.Component<IProps> {
+    render() {
+        const {field, form, ...rest} = this.props
+        return (
+            <View style={styles.container}>
+                <TextInput
+                    style={styles.input}
+                    onChangeText={form.handleChange(field.name)}
+                    onBlur={form.handleBlur(field.name)}
+                    value={form.values[field.name]}
+                    {...rest}
+                ></TextInput>
+                <View>
+                    <Text style={styles.error}>{form.touched[field.name] && form.errors[field.name]}</Text>
+                </View>
+            </View>
+        )
+    }
+}
+...
+
+export default Input
 ```
 
 保存登录状态，显示登录后内容
 
+```ts
+// /models/user.tsimport storage, { load } from "@/config/storage";
+...
+import { goback } from "../utils";
+import Toast from 'react-native-root-toast'
+
+const USER_URL = '/mock/11/login'
+
+export interface IUser {
+    avatar: string;
+    name: string;
+}
+
+export interface UserModelState {
+    user?: IUser,
+}
+
+interface UserModel extends Model {
+    namespace: 'user',
+    state: UserModelState,
+    effects: {
+        login: Effect,
+        logout: Effect,
+        loadStorage: Effect,
+    },
+    reducers: {
+        setState: Reducer<UserModelState>
+    },
+    subscriptions: SubscriptionsMapObject,
+}
+
+const initialState: UserModelState = {
+    user: undefined
+}
+
+const userModel: UserModel = {
+    namespace: 'user',
+    state: initialState,
+    effects: {
+        *login({payload}, {call, put}) {
+            const {data, status, msg} = yield call(axios.post, USER_URL, payload)
+            if(status === 100) {
+                yield put({
+                    type: 'setState',
+                    payload: {
+                        user: data
+                    }
+                })
+                // 保存登录数据到本地
+                storage.save({
+                    key: 'user',
+                    data
+                })
+                goback()
+            }else {
+                Toast.show(msg, {
+                    duration: Toast.durations.LONG,
+                    position: Toast.positions.CENTER,
+                    shadow: true,
+                    animation: true, 
+                })
+                console.log('msg', msg);
+            }
+        },
+        *logout({payload}, {put}) {
+            yield put({
+                type: 'setState',
+                payload: {
+                    user: undefined,
+                }
+            })
+            // 清空本地登录数据
+            storage.save({
+                key: 'user',
+                data: null,
+            })
+        },
+        *loadStorage({payload}, {put, call}) {
+            try {
+                // 获取登录数据
+                const user = yield call(load, {key: 'user'})
+                yield put({
+                    type: 'setState',
+                    payload: {
+                        user,
+                    }
+                })
+            } catch (error) {
+                console.log('load storage error', error);
+            }
+        },
+    },
+    reducers: {
+        setState(state, {payload}) {
+            return {
+                ...state,
+                ...payload,
+            }
+        }
+    },
+    subscriptions: {
+        // 获取登录数据
+        setup({dispatch}) {
+            dispatch({
+                type: 'loadStorage'
+            })
+        }
+    },
+}
+
+export default userModel
+```
+
 封装登录状态判断
+
+```tsx
+// /pages/Authorited.tsx
+...
+import { navigate } from '../utils'
+
+interface IProps {
+    children: React.ReactNode,
+    authority?: boolean,
+    noMatch?: () => JSX.Element
+}
+
+class Authorized extends React.Component<IProps> {
+    pressHandler = () => {
+        navigate("Login")
+    }
+    renderNoMatch = () => {
+        if(this.props.noMatch) {
+            return this.props.noMatch
+        }else {
+            return (
+                <View style={styles.loginView}>
+                    <Image source={defaultAvatar} style={styles.avatar}></Image>
+                    <View style={styles.right}>
+                        <Touchable style={styles.loginBtn} onPress={this.pressHandler}>
+                            <Text style={styles.loginBtnText}>立即登录</Text>
+                        </Touchable>
+                        <Text style={styles.tip}>登录后自动同步所有记录</Text>
+                    </View>
+                </View>
+            )
+        }
+    }
+    render() {
+        const {children, authority} = this.props
+        if(authority) {
+            return children
+        }else {
+            return (this.renderNoMatch())
+        }
+    }
+}
+...
+
+export default Authorized
+
+// /pages/Account.tsx
+...
+
+interface IProps extends ModelState {
+    // navigation传过来的参数，可进行路由跳转
+    navigation: ModelStackProps,
+}
+
+class Account extends React.Component<IProps> {
+    pressHandler = () => {
+        const {navigation} = this.props
+        navigation.navigate("Login")
+    }
+    logout = () => {
+        const {dispatch} = this.props
+        dispatch({
+            type: 'user/logout',
+        })
+    }
+    render() {
+        const {user} = this.props
+        return (
+            <Authorized authority={!!user}>
+                <View>
+                    <View style={styles.loginView}>
+                        <Image source={{uri: user?.avatar}} style={styles.avatar}></Image>
+                        <View style={styles.right}>
+                            <Text style={styles.tip}>{user?.name}</Text>
+                        </View>
+                    </View>
+                    <Touchable style={[styles.loginBtn, {marginLeft: 15}]} onPress={this.logout}>
+                        <Text style={styles.loginBtnText}>退出登录</Text>
+                    </Touchable>
+                </View>
+            </Authorized>
+        )
+    }
+}
+...
+
+export default connector(Account)
+```
+
+错误提示，`npm i react-native-root-toast`
+
+按钮的节流处理
+
+```tsx
+// /components/Touchable.tsx
+import _ from 'lodash'
+import React, { useCallback } from 'react'
+import { StyleSheet, TouchableOpacity, TouchableOpacityProps } from 'react-native'
+
+const Touchable: React.FC<TouchableOpacityProps> = React.memo(({style, onPress, ...rest}) => {
+    const touchableStyle = rest.disabled ? [style, styles.disabled] : style
+    // 点击事件节流
+    let throttleOnPress = undefined
+    if(typeof onPress === 'function') {
+        // 设置回调在节流之前执行
+        throttleOnPress = useCallback(_.throttle(onPress, 1000, {leading: true, trailing: false}), [onPress])
+    }
+    return (
+        <TouchableOpacity
+            onPress={throttleOnPress}
+            style={touchableStyle}
+            activeOpacity={0.8}
+            {...rest}
+        ></TouchableOpacity>
+    )
+})
+
+const styles = StyleSheet.create({
+    disabled: {
+        opacity: 0.5,
+    }
+})
+
+export default Touchable
+```
+
+dva的全局错误处理
+
+```ts
+// /config/dva.ts
+...
+// 创建实例
+const app = create({
+    // 全局错误处理
+    onError: (e) => {
+        Toast.show('网络异常', {
+            position: Toast.positions.CENTER,
+            duration: Toast.durations.LONG,
+            shadow: true,
+            animation: true,
+        })
+    }
+})
+...
+```
+
+react-native-screens优化性能
+
+```tsx
+// src/index.tsx
+import React from 'react'
+import { Provider } from 'react-redux'
+import {RootSiblingParent} from 'react-native-root-siblings'
+// 通过原生组件对应用性能和内存占用进行优化
+import {enableScreens} from 'react-native-screens'
+
+import Navigator from '@/navigator/index'
+import store from '@/config/dva'
+import { StatusBar } from 'react-native'
+import '@/config/http'
+
+enableScreens()
+
+export default class extends React.Component {
+    render() {
+        return (
+            <Provider store={store}>
+                {/* RootSiblingParent：解决toast在安卓端不显示 */}
+                <RootSiblingParent>
+                    <Navigator></Navigator>
+                </RootSiblingParent>
+                {/* 修改顶部状态栏样式 */}
+                <StatusBar
+                    backgroundColor="transparent"
+                    barStyle="dark-content"
+                    // 半透明属性
+                    translucent
+                ></StatusBar>
+            </Provider>
+        )
+    }
+}
+```
+
