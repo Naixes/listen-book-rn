@@ -1,6 +1,7 @@
 import { NavigationContainer, RouteProp } from '@react-navigation/native'
 import { CardStyleInterpolators, createStackNavigator, HeaderStyleInterpolators, StackNavigationProp, TransitionPresets, NavigationState } from '@react-navigation/stack'
 import React from 'react'
+import SplachScreen from 'react-native-splash-screen'
 
 // Home为标签选择器
 import Home from '@/navigator/BottomTabs'
@@ -192,6 +193,10 @@ const ModelStackScreen = () => {
 class Navigator extends React.Component {
     state = {
         routeName: 'Root'
+    }
+    componentDidMount() {
+        // 隐藏启动屏
+        SplachScreen.hide()
     }
     onStateChange = (state: NavigationState) => {
         const routeName = getActiveTabName(state)

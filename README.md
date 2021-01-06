@@ -4647,3 +4647,120 @@ export default class extends React.Component {
 }
 ```
 
+### 打包
+
+#### android启动屏优化
+
+打开时白屏，正在加载js代码
+
+`npm i react-native-splash-screen`可在白屏时展示一张图片
+
+android/src/main/res（用来存放安卓的资源文件，其中mipmap文件夹下的图片安卓会进行优化，谷歌建议只把启动图标放在这里） 创建layout，drawable-xhdpi，drawable-xxhdpi文件夹
+
+layout中创建launch_screen.xml，是应用刚刚打开时显示的页面
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/launch_screen" android:scaleType="centerCrop" />
+</RelativeLayout>
+```
+
+values中新建colors.xml
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 新建一个颜色常量 -->
+<resources>
+    <color name="colorPrimaryDark">#FFFFFF</color>
+</resources>
+```
+
+styles.xml中添加
+
+```xml
+<resources>
+    ...
+    <!-- 声明主题 -->
+    <style name="SplashScreenTheme" parent="SplashScreen_SplashTheme">
+        <!-- 5.0以上有效，将状态栏颜色进行修改 -->
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+    </style>
+</resources>
+```
+
+修改main/java中的MainActivity.java
+
+```java
+// 增加以下代码
+// react-native-screens需要添加以下代码
+import android.os.Bundle;
+// 打包时增加
+import org.devio.rn.splashscreen.SplashScreen;
+...
+    
+// 重写onCreate方法，整个RN项目的加载的入口
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    // 显示启动屏，第二个参数是我们自定义主题的引用
+    SplashScreen.show(this, R.style.SplashScreenTheme);
+    super.onCreate(savedInstanceState);
+}
+```
+
+> 安装失败：方法数超过64k
+>
+> 可能由于视频库较大
+>
+> 方法1：如果不用兼容5.0以下版本可以将build.gradle的minSdkVersion改为21
+>
+> 方法2：app/build.gradle
+>
+> ```gradle
+> defaultConfig {
+>     ...
+>     // 开启打包多个文件
+>     multiDexEnabled true
+> }
+> // 此时5.0以下版本会有问题，因为不能运行多个文件，要添加依赖
+> dependencies {
+> 	implementation 'androidx.multidex:multidex:2.0.1'
+> }
+> ```
+>
+> main/MainApplication文件中添加
+>
+> ```java
+> ...
+> import androidx.multidex.MultiDex;
+>     
+> // 打包时添加
+> @Override
+> protected void attachBaseContext(Context base) {
+>     super.attachBaseContext(base);
+>     MultiDex.install(this);
+> }
+> ```
+
+隐藏启动屏
+
+```tsx
+// /navigator/index.tsx
+import SplachScreen from 'react-native-splash-screen'
+...
+
+class Navigator extends React.Component {
+    componentDidMount() {
+        // 隐藏启动屏
+        SplachScreen.hide()
+    }
+    ...
+}
+...
+
+export default Navigator
+```
+
+#### 打包成不同版本

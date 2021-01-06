@@ -7,6 +7,8 @@ import com.facebook.react.ReactRootView;
 import com.swmansion.gesturehandler.react.RNGestureHandlerEnabledRootView;
 // react-native-screens需要添加以下代码
 import android.os.Bundle;
+// 打包时增加
+import org.devio.rn.splashscreen.SplashScreen;
 
 public class MainActivity extends ReactActivity {
 
@@ -29,8 +31,17 @@ public class MainActivity extends ReactActivity {
     };
   }
   // react-native-screens需要添加以下代码
+  // @Override
+  // protected void onCreate(Bundle savedInstanceState) {
+  //     super.onCreate(null);
+  // }
+
+  // 打包时添加
+  // 重写onCreate方法，整个RN项目的加载的入口
   @Override
   protected void onCreate(Bundle savedInstanceState) {
-      super.onCreate(null);
+    // 显示启动屏，第二个参数是我们自定义主题的引用
+    SplashScreen.show(this, R.style.SplashScreenTheme);
+    super.onCreate(savedInstanceState);
   }
 }
