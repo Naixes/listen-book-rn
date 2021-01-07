@@ -4764,3 +4764,177 @@ export default Navigator
 ```
 
 #### 打包成不同版本
+
+.env
+
+```env
+API_URL=http://192.168.138.2:3001/
+APP_NAME=听书
+VERSIONCODE=1
+VERSIONNAME=1.0.0
+```
+
+android/app/build.gradle
+
+```gradle
+// 从最后移动到第二行
+// 2nd line, add a new apply:
+apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+
+// 使用上面的env配置
+defaultConfig {
+    ...
+    versionCode project.env.get('VERSIONCODE').toInteger()
+    versionName project.env.get('VERSIONNAME')
+    // 开启打包多个文件
+    multiDexEnabled true
+}
+
+// 配置应用名称
+// app/src/main/res/values/strings.xml
+<resources>
+    <string name="app_name">@string/APP_NAME</string>
+</resources>
+```
+
+新建.env.production
+
+```
+API_URL=http://39.105.213.120
+APP_NAME=听书
+VERSIONCODE=1
+VERSIONNAME=1.0.0
+```
+
+安卓9.0版本禁止使用http协议，以下步骤可解决
+
+```
+// app/src/main/res中新建文件夹xml新建network_security_config.xml
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
+
+// ...main/AndroidManifest.xml
+// 增加属性
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.listenbookrn">
+  	...
+    <application
+      ...
+      android:networkSecurityConfig="@xml/network_security_config">
+      ...
+    </application>
+
+</manifest>
+```
+
+编译时删除打印语句
+
+有一个插件可以这里使用重置console.log函数
+
+```ts
+// index.js
+...
+
+if(!__DEV__) {
+    const emptyFunc = () => {}
+    global.console.info = emptyFunc
+    global.console.log = emptyFunc
+    global.console.warn = emptyFunc
+    global.console.error = emptyFunc
+}
+
+AppRegistry.registerComponent(appName, () => App);
+```
+
+使用AS打开android目录，res目录右键new-image assets，创建应用图标
+
+#### 安卓打包
+
+```
+cd android/app
+// 生成签名
+keytool -genkeypair -v -keystore my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
+// 输入口令（naixes）
+
+// gradle.properties
+...
+MYAPP_RELEASE_STORE_FILE=my-release-key.keystore
+MYAPP_RELEASE_KEY_ALIAS=my-key-alias
+MYAPP_RELEASE_STORE_PASSWORD=naixes
+MYAPP_RELEASE_KEY_PASSWORD=naixes
+
+// /app/build-gradle
+...
+//  根据不同cpu生成不同的apk，减少apk大小
+def enableSeparateBuildPerCPUArchitecture = true
+...
+    signingConfigs {
+        ...
+        release {
+            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
+                storeFile file(MYAPP_RELEASE_STORE_FILE)
+                storePassword MYAPP_RELEASE_STORE_PASSWORD
+                keyAlias MYAPP_RELEASE_KEY_ALIAS
+                keyPassword MYAPP_RELEASE_KEY_PASSWORD
+            }
+        }
+    }
+    buildTypes {
+        ...
+        release {
+            signingConfig signingConfigs.release
+            ...
+        }
+    }
+...
+
+// 打包
+cd android && ./gradlew assembleRelease // mac
+cd android && gradlew assembleRelease // win cmd
+// 或者使用脚本工具打包
+npm i react-native-upload -D // 脚本命令库，win需要用gitbash执行
+
+"terminal.integrated.shell.windows": "D:\\Program Files\\Git\\bin\\bash.exe" // vscode gitbash配置，settings.json
+
+npx upload-init //生成配置文件upload.json
+npx upload-build --no-ios // 打包
+```
+
+上传到蒲公英测试应用市场
+
+```json
+// 注册获得api key www.pgyer.com/account/api
+// upload.json
+{
+  "pgy": {
+    "pgy_api_key": "api key",
+    // 1邀请安装2密码安装
+    "pgy_install_type": 2,
+    "pgy_install_password": "naixes",
+    "ios_export_plist": "./ios-export/ad-hoc.plist"
+  },
+  "fir": {
+    "fir_api_token": "",
+    "ios_export_plist": "./ios-export/ad-hoc.plist"
+  },
+  "app_store": {
+    "user_name": "",
+    "user_password": "",
+
+    "api_key": "",
+    "api_issuer": "",
+
+    "ios_export_plist": "./ios-export/app-store.plist"
+  },
+  "test_flight": {
+    "ios_export_plist": "./ios-export/ad-hoc.plist"
+  }
+}
+
+// 编译并上传，可将命令配置到scripts
+export ENVFILE=.env.production && npx upload-pgy --no-ios --apk=v7a // mac
+set ENVFILE=.env.production && npx upload-pgy --no-ios --apk=v7a // win gitbash
+```
+
