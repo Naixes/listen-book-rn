@@ -4936,5 +4936,7 @@ npx upload-build --no-ios // 打包
 // 编译并上传，可将命令配置到scripts
 export ENVFILE=.env.production && npx upload-pgy --no-ios --apk=v7a // mac
 set ENVFILE=.env.production && npx upload-pgy --no-ios --apk=v7a // win gitbash
+
+// 测试完成后可上传到应用商城比如阿里应用分发开放平台
 ```
 
